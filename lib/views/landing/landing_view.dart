@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/routes/app_routes.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/routes/app_routes.dart';
 
-class LandingPage extends StatelessWidget {
-  const LandingPage({super.key});
+class LandingView extends StatelessWidget {
+  const LandingView({super.key});
 
   @override
   Widget build(BuildContext context) {

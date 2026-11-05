@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'core/supabase_config.dart';
-import 'view/core/routes/app_routes.dart';
-import 'view/core/theme/app_theme.dart';
-import 'view/features/auth/presentation/pages/login_page.dart';
-import 'view/features/landing/presentation/pages/landing_page.dart';
-import 'view/features/splash/presentation/pages/splash_page.dart';
+import 'core/config/supabase_config.dart';
+import 'core/routes/app_routes.dart';
+import 'core/theme/app_theme.dart';
+import 'views/auth/login_view.dart';
+import 'views/landing/landing_view.dart';
+import 'views/splash/splash_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,9 +52,9 @@ class RentraApp extends StatelessWidget {
         );
       },
       routes: {
-        AppRoutes.splash: (context) => const SplashPage(),
-        AppRoutes.landing: (context) => const LandingPage(),
-        AppRoutes.login: (context) => const LoginPage(),
+        AppRoutes.splash: (context) => const SplashView(),
+        AppRoutes.landing: (context) => const LandingView(),
+        AppRoutes.login: (context) => const LoginView(),
       },
     );
   }
