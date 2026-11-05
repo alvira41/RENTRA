@@ -45,7 +45,7 @@ class _LoginViewState extends State<LoginView> {
             child: Opacity(
               opacity: 0.2,
               child: Image.asset(
-                'assets/images/bg_landing.png',
+                'assets/images/background.jpeg',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) =>
                     const SizedBox.shrink(),

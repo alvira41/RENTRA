@@ -17,7 +17,7 @@ class LandingView extends StatelessWidget {
             child: Opacity(
               opacity: 0.35,
               child: Image.asset(
-                'assets/images/background.png',
+                'assets/images/background.jpeg',
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) =>
                     const SizedBox.shrink(),
