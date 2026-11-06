@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'core/config/supabase_config.dart';
 import 'core/routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
+import 'views/admin/car_form_view.dart';
+import 'views/admin/dashboard_view.dart';
+import 'views/admin/order_view.dart';
 import 'views/auth/login_view.dart';
 import 'views/landing/landing_view.dart';
 import 'views/splash/splash_view.dart';
@@ -55,6 +58,10 @@ class RentraApp extends StatelessWidget {
         AppRoutes.splash: (context) => const SplashView(),
         AppRoutes.landing: (context) => const LandingView(),
         AppRoutes.login: (context) => const LoginView(),
+        AppRoutes.adminDashboard: (context) => const DashboardView(),
+        AppRoutes.adminAddCar: (context) => const CarFormView(),
+        AppRoutes.adminEditCar: (context) => const CarFormView(isEdit: true),
+        AppRoutes.adminOrder: (context) => const OrderView(),
       },
     );
   }

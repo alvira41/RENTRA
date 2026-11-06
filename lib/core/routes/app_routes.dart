@@ -6,6 +6,8 @@ class AppRoutes {
   static const String login = '/login';
 
   static const String adminDashboard = '/admin/dashboard';
+  static const String adminAddCar = '/admin/tambah-mobil';
+  static const String adminEditCar = '/admin/edit-mobil';
   static const String adminKatalog = '/admin/katalog';
   static const String adminOrder = '/admin/order';
   static const String adminSupply = '/admin/supply';

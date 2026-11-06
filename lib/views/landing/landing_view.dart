@@ -31,70 +31,65 @@ class LandingView extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    AppColors.background.withOpacity(0.6),
-                    AppColors.background.withOpacity(0.2),
-                    AppColors.background.withOpacity(0.8),
+                    AppColors.background.withValues(alpha: 0.6),
+                    AppColors.background.withValues(alpha: 0.2),
+                    AppColors.background.withValues(alpha: 0.8),
                   ],
                 ),
               ),
             ),
           ),
           SafeArea(
-            child: SizedBox(
-              width: double.infinity,
-              height: double.infinity,
-              child: Column(
-                children: [
-                  SizedBox(height: size.height * 0.1),
-                  Image.asset(
-                    'assets/images/logo.png',
-                    width: size.width * 0.6,
-                    fit: BoxFit.contain,
+            child: Column(
+              children: [
+                SizedBox(height: size.height * 0.08),
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: size.width * 0.6,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'DRIVE YOUR JOURNEY',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                    letterSpacing: 3,
                   ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'DRIVE YOUR JOURNEY',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                      letterSpacing: 3,
-                    ),
-                  ),
-                  SizedBox(height: size.height * 0.12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Padding(
-                      padding: EdgeInsets.only(left: size.width * 0.12),
-                      child: SizedBox(
-                        height: 38,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).pushNamed(AppRoutes.login);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.textPrimary,
-                            foregroundColor: AppColors.buttonText,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
+                ),
+                SizedBox(height: size.height * 0.08),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: size.width * 0.12),
+                    child: SizedBox(
+                      height: 38,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pushNamed(AppRoutes.login);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.textPrimary,
+                          foregroundColor: AppColors.buttonText,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text("Let's Drive"),
-                              SizedBox(width: 10),
-                              Icon(Icons.arrow_forward, size: 16),
-                            ],
-                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text("Let's Drive"),
+                            SizedBox(width: 10),
+                            Icon(Icons.arrow_forward, size: 16),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  Align(
+                ),
+                Expanded(
+                  child: Align(
                     alignment: Alignment.bottomRight,
                     child: Transform.translate(
                       offset: const Offset(24, 0),
@@ -102,11 +97,12 @@ class LandingView extends StatelessWidget {
                         'assets/images/car1.png',
                         width: size.width * 0.85,
                         fit: BoxFit.contain,
+                        alignment: Alignment.bottomRight,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
