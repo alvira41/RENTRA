@@ -73,26 +73,11 @@ class _OrderViewState extends State<OrderView> {
     _orders = List<_OrderItem>.of(_dummyOrders);
   }
 
-  void _handleDecision(_OrderItem item, String message) {
+  void _onConfirm(_OrderItem item) {
     setState(() => _orders.remove(item));
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(content: Text('Pesanan ${item.customer} dikonfirmasi')),
     );
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
-  void _onNavSelected(int index) {
-    if (index == 0) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.adminDashboard,
-        (route) => false,
-      );
-    }
   }
 
   @override
@@ -105,7 +90,6 @@ class _OrderViewState extends State<OrderView> {
       bottomNavigationBar: AdminBottomBar(
         currentIndex: 1,
         onAddTap: () => showAddOptionsDialog(context),
-        onItemSelected: _onNavSelected,
       ),
       body: Stack(
         children: [
@@ -172,16 +156,11 @@ class _OrderViewState extends State<OrderView> {
                             final item = _orders[index];
                             return _OrderCard(
                               item: item,
-                              onConfirm: () => _handleDecision(
-                                item,
-                                'Pesanan ${item.customer} dikonfirmasi',
-                              ),
-                              onReject: () => _handleDecision(
-                                item,
-                                'Pesanan ${item.customer} ditolak',
-                              ),
-                              onDetail: () =>
-                                  _showMessage('Detail pesanan menyusul'),
+                              onConfirm: () => _onConfirm(item),
+                              onProof: () => Navigator.of(context)
+                                  .pushNamed(AppRoutes.adminPaymentProof),
+                              onReturn: () => Navigator.of(context)
+                                  .pushNamed(AppRoutes.adminReturn),
                             );
                           },
                         ),
@@ -199,14 +178,14 @@ class _OrderCard extends StatelessWidget {
   const _OrderCard({
     required this.item,
     required this.onConfirm,
-    required this.onReject,
-    required this.onDetail,
+    required this.onProof,
+    required this.onReturn,
   });
 
   final _OrderItem item;
   final VoidCallback onConfirm;
-  final VoidCallback onReject;
-  final VoidCallback onDetail;
+  final VoidCallback onProof;
+  final VoidCallback onReturn;
 
   @override
   Widget build(BuildContext context) {
@@ -246,15 +225,15 @@ class _OrderCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 _ActionChip(
-                  label: 'Tolak',
-                  color: const Color(0xFFEF4444),
-                  onTap: onReject,
+                  label: 'Bukti',
+                  color: const Color(0xFFFACC15),
+                  onTap: onProof,
                 ),
                 const SizedBox(height: 4),
                 _ActionChip(
-                  label: 'Detail',
+                  label: 'Kembalikan',
                   color: const Color(0xFF4ADE80),
-                  onTap: onDetail,
+                  onTap: onReturn,
                 ),
               ],
             ),

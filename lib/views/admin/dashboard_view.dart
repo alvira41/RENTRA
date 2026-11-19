@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/routes/app_routes.dart';
 import '../widgets/add_options_dialog.dart';
 import '../widgets/admin_bottom_bar.dart';
+import 'profile_view.dart';
 
 class _CarItem {
   const _CarItem({
@@ -137,18 +138,6 @@ class _DashboardViewState extends State<DashboardView> {
     );
   }
 
-  void _onNavSelected(int index) {
-    if (index == 1) {
-      Navigator.of(context).pushNamed(AppRoutes.adminOrder);
-      return;
-    }
-    if (index == 3 || index == 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Halaman ini menyusul')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -159,7 +148,6 @@ class _DashboardViewState extends State<DashboardView> {
       bottomNavigationBar: AdminBottomBar(
         currentIndex: 0,
         onAddTap: () => showAddOptionsDialog(context),
-        onItemSelected: _onNavSelected,
       ),
       body: Stack(
         children: [

@@ -10,5 +10,11 @@ class AppRoutes {
   static const String adminEditCar = '/admin/edit-mobil';
   static const String adminKatalog = '/admin/katalog';
   static const String adminOrder = '/admin/order';
+  static const String adminPaymentProof = '/admin/bukti-pembayaran';
+  static const String adminReturn = '/admin/pengembalian';
   static const String adminSupply = '/admin/supply';
+  static const String adminAddMitra = '/admin/tambah-mitra';
+  static const String adminActivity = '/admin/aktivitas';
+  static const String adminProfile = '/admin/profile';
+  static const String adminEditPassword = '/admin/edit-password';
 }

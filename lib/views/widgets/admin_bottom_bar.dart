@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/routes/app_routes.dart';
 
 class AdminBottomBar extends StatelessWidget {
   const AdminBottomBar({
     super.key,
     required this.currentIndex,
     required this.onAddTap,
-    this.onItemSelected,
   });
 
   final int currentIndex;
   final VoidCallback onAddTap;
-  final ValueChanged<int>? onItemSelected;
 
   static const List<IconData> _icons = [
     Icons.home_rounded,
@@ -20,6 +19,31 @@ class AdminBottomBar extends StatelessWidget {
     Icons.handshake_outlined,
     Icons.edit_note_rounded,
   ];
+
+  static const List<String?> _routes = [
+    AppRoutes.adminDashboard,
+    AppRoutes.adminOrder,
+    null,
+    AppRoutes.adminSupply,
+    AppRoutes.adminActivity,
+  ];
+
+  void _navigate(BuildContext context, int index) {
+    final route = _routes[index];
+    if (route == null) return;
+
+    if (ModalRoute.of(context)?.settings.name == route) return;
+
+    if (index == 0) {
+      Navigator.of(context).pushNamedAndRemoveUntil(route, (r) => false);
+      return;
+    }
+
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      route,
+      (r) => r.settings.name == AppRoutes.adminDashboard,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,16 +59,15 @@ class AdminBottomBar extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: List.generate(_icons.length, (index) {
-              final isAdd = index == 2;
               return _NavIcon(
                 icon: _icons[index],
                 active: index == currentIndex,
                 onTap: () {
-                  if (isAdd) {
+                  if (index == 2) {
                     onAddTap();
                     return;
                   }
-                  onItemSelected?.call(index);
+                  _navigate(context, index);
                 },
               );
             }),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/routes/app_routes.dart';
+import '../widgets/add_options_dialog.dart';
 import '../widgets/admin_bottom_bar.dart';
 
 class CarFormView extends StatefulWidget {
@@ -88,19 +88,6 @@ class _CarFormViewState extends State<CarFormView> {
     Navigator.of(context).pop();
   }
 
-  void _onNavSelected(int index) {
-    if (index == 0) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRoutes.adminDashboard,
-        (route) => false,
-      );
-      return;
-    }
-    if (index == 1) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.adminOrder);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
@@ -111,8 +98,7 @@ class _CarFormViewState extends State<CarFormView> {
       backgroundColor: AppColors.background,
       bottomNavigationBar: AdminBottomBar(
         currentIndex: widget.isEdit ? -1 : 2,
-        onAddTap: () {},
-        onItemSelected: _onNavSelected,
+        onAddTap: () => showAddOptionsDialog(context),
       ),
       body: Stack(
         children: [

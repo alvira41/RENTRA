@@ -3,9 +3,14 @@ import 'package:flutter/services.dart';
 import 'core/config/supabase_config.dart';
 import 'core/routes/app_routes.dart';
 import 'core/theme/app_theme.dart';
+import 'views/admin/activity_view.dart';
 import 'views/admin/car_form_view.dart';
 import 'views/admin/dashboard_view.dart';
+import 'views/admin/mitra_form_view.dart';
 import 'views/admin/order_view.dart';
+import 'views/admin/payment_proof_view.dart';
+import 'views/admin/return_view.dart';
+import 'views/admin/supply_view.dart';
 import 'views/auth/login_view.dart';
 import 'views/landing/landing_view.dart';
 import 'views/splash/splash_view.dart';
@@ -62,6 +67,11 @@ class RentraApp extends StatelessWidget {
         AppRoutes.adminAddCar: (context) => const CarFormView(),
         AppRoutes.adminEditCar: (context) => const CarFormView(isEdit: true),
         AppRoutes.adminOrder: (context) => const OrderView(),
+        AppRoutes.adminPaymentProof: (context) => const PaymentProofView(),
+        AppRoutes.adminReturn: (context) => const ReturnView(),
+        AppRoutes.adminSupply: (context) => const SupplyView(),
+        AppRoutes.adminAddMitra: (context) => const MitraFormView(),
+        AppRoutes.adminActivity: (context) => const ActivityView(),
       },
     );
   }
