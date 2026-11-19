@@ -39,15 +39,15 @@ class ProfileView extends StatelessWidget {
     return RentraScaffold(
       title: 'PROFILE',
       bottom: SizedBox(
-        width: 90,
-        height: 30,
+        width: 112,
+        height: 38,
         child: OutlinedButton.icon(
           onPressed: () => _logout(context),
           icon: const Icon(Icons.logout, size: 12, color: Colors.white),
           label: const Text('Logout',
-              style: TextStyle(color: Colors.white, fontSize: 10)),
+              style: TextStyle(color: Colors.white, fontSize: 12)),
           style: OutlinedButton.styleFrom(
-            backgroundColor: const Color(0xFFB3261E),
+            backgroundColor: const Color(0xFFEF4444),
             side: const BorderSide(color: Color(0xFFE57373)),
             padding: EdgeInsets.zero,
             shape:
@@ -60,12 +60,12 @@ class ProfileView extends StatelessWidget {
         child: Column(
           children: [
             const Icon(Icons.account_circle_outlined,
-                color: Colors.white, size: 52),
+                color: Colors.white, size: 64),
             const SizedBox(height: 4),
             const Text(_namaPanggilan,
                 style: TextStyle(
                     color: Colors.white,
-                    fontSize: 11,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
             Container(
@@ -76,7 +76,7 @@ class ProfileView extends StatelessWidget {
                 border: Border.all(color: const Color(0xFF60A5FA)),
               ),
               child: const Text(_role,
-                  style: TextStyle(color: Colors.white, fontSize: 8)),
+                  style: TextStyle(color: Colors.white, fontSize: 10)),
             ),
             const SizedBox(height: 14),
             Container(
@@ -101,7 +101,7 @@ class ProfileView extends StatelessWidget {
             const Spacer(),
             SizedBox(
               width: double.infinity,
-              height: 30,
+              height: 38,
               child: OutlinedButton.icon(
                 onPressed: () => Navigator.push(
                   context,
@@ -110,7 +110,7 @@ class ProfileView extends StatelessWidget {
                 icon: const Icon(Icons.lock_outline,
                     size: 12, color: Colors.white),
                 label: const Text('Edit Password',
-                    style: TextStyle(color: Colors.white, fontSize: 10)),
+                    style: TextStyle(color: Colors.white, fontSize: 12)),
                 style: OutlinedButton.styleFrom(
                   backgroundColor: Colors.white.withOpacity(0.1),
                   side: BorderSide(color: Colors.white.withOpacity(0.3)),
@@ -140,16 +140,16 @@ class _InfoRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 78,
+            width: 104,
             child: Text(label,
                 style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 8,
+                    fontSize: 10,
                     fontWeight: FontWeight.w700)),
           ),
           Expanded(
             child: Text(value,
-                style: const TextStyle(color: Colors.white70, fontSize: 8)),
+                style: const TextStyle(color: Colors.white70, fontSize: 10)),
           ),
         ],
       ),

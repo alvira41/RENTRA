@@ -12,6 +12,8 @@ class LoginView extends StatefulWidget {
 class _LoginViewState extends State<LoginView> {
   static const String _dummyEmail = 'admin@rentra.com';
   static const String _dummyPassword = 'admin123';
+  static const String _dummyMitraEmail = 'mitra@rentra.com';
+  static const String _dummyMitraPassword = 'mitra123';
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -43,6 +45,11 @@ class _LoginViewState extends State<LoginView> {
 
     if (email == _dummyEmail && password == _dummyPassword) {
       Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
+      return;
+    }
+
+    if (email == _dummyMitraEmail && password == _dummyMitraPassword) {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.mitraDashboard);
       return;
     }
 

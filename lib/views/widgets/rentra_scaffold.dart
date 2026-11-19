@@ -1,5 +1,31 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
+
+class RentraBackground extends StatelessWidget {
+  final Widget child;
+  const RentraBackground({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Opacity(
+            opacity: 0.15,
+            child: Image.asset(
+              'assets/images/background.jpeg',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) =>
+                  const SizedBox.shrink(),
+            ),
+          ),
+        ),
+        child,
+      ],
+    );
+  }
+}
 
 class RentraScaffold extends StatelessWidget {
   final String title;
@@ -17,50 +43,42 @@ class RentraScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final side = width * 0.06;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B1220), Color(0xFF111B2E), Color(0xFF0B1220)],
-          ),
-        ),
+      backgroundColor: AppColors.background,
+      body: RentraBackground(
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            padding: EdgeInsets.fromLTRB(side, 16, side, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'RENTRA',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 4,
-                  ),
+                Image.asset(
+                  'assets/images/logo.png',
+                  width: width * 0.3,
+                  fit: BoxFit.contain,
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 18),
                 Row(
                   children: [
                     if (showBack)
                       GestureDetector(
                         onTap: () => Navigator.maybePop(context),
                         child: const Padding(
-                          padding: EdgeInsets.only(right: 8),
+                          padding: EdgeInsets.only(right: 10),
                           child: Icon(Icons.arrow_back_ios_new,
-                              color: Colors.white, size: 14),
+                              color: AppColors.textPrimary, size: 16),
                         ),
                       ),
                     Text(
                       title,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ],
@@ -89,7 +107,7 @@ class GlassCard extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(14),
-    this.radius = 10,
+    this.radius = 14,
   });
 
   @override
@@ -97,14 +115,14 @@ class GlassCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           width: double.infinity,
           padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
+            color: const Color(0x26FFFFFF),
             borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: Colors.white.withOpacity(0.25)),
+            border: Border.all(color: const Color(0x40FFFFFF)),
           ),
           child: child,
         ),

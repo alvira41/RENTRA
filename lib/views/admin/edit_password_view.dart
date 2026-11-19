@@ -54,16 +54,16 @@ class _EditPasswordViewState extends State<EditPasswordView> {
         controller: controller,
         obscureText: hidden,
         validator: validator,
-        style: const TextStyle(color: Colors.white, fontSize: 10),
+        style: const TextStyle(color: Colors.white, fontSize: 12),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white, fontSize: 10),
+          hintStyle: const TextStyle(color: Colors.white, fontSize: 12),
           isDense: true,
           filled: true,
           fillColor: Colors.white.withOpacity(0.1),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          errorStyle: const TextStyle(fontSize: 8),
+          errorStyle: const TextStyle(fontSize: 10),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
@@ -97,7 +97,7 @@ class _EditPasswordViewState extends State<EditPasswordView> {
               children: [
                 const Text(
                   'Masukkan password lama, lalu buat password baru.',
-                  style: TextStyle(color: Colors.white, fontSize: 9),
+                  style: TextStyle(color: Colors.white, fontSize: 11),
                 ),
                 const SizedBox(height: 14),
                 _field(
@@ -129,7 +129,7 @@ class _EditPasswordViewState extends State<EditPasswordView> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: SizedBox(
-                    height: 26,
+                    height: 34,
                     child: OutlinedButton(
                       onPressed: _loading ? null : _confirm,
                       style: OutlinedButton.styleFrom(
@@ -147,7 +147,7 @@ class _EditPasswordViewState extends State<EditPasswordView> {
                               child: CircularProgressIndicator(strokeWidth: 1.5))
                           : const Text('Confirm',
                               style:
-                                  TextStyle(color: Colors.white, fontSize: 9)),
+                                  TextStyle(color: Colors.white, fontSize: 11)),
                     ),
                   ),
                 ),

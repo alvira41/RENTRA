@@ -14,6 +14,11 @@ import 'views/admin/supply_view.dart';
 import 'views/auth/login_view.dart';
 import 'views/landing/landing_view.dart';
 import 'views/splash/splash_view.dart';
+import 'views/mitra/dashboard_mitra_view.dart';
+import 'views/mitra/mitra_car_form_view.dart';
+import 'views/mitra/konfirmasi_supply_view.dart';
+import 'views/mitra/bukti_mitra_view.dart';
+import 'views/mitra/aktivitas_mitra_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -72,6 +77,11 @@ class RentraApp extends StatelessWidget {
         AppRoutes.adminSupply: (context) => const SupplyView(),
         AppRoutes.adminAddMitra: (context) => const MitraFormView(),
         AppRoutes.adminActivity: (context) => const ActivityView(),
+        AppRoutes.mitraDashboard: (context) => const DashboardMitraView(),
+        AppRoutes.mitraAddCar: (context) => const MitraCarFormView(),
+        AppRoutes.mitraSupply: (context) => const KonfirmasiSupplyView(),
+        AppRoutes.mitraProof: (context) => const BuktiMitraView(),
+        AppRoutes.mitraActivity: (context) => const AktivitasMitraView(),
       },
     );
   }

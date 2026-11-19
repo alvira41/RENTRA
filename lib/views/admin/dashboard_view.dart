@@ -86,6 +86,12 @@ class _DashboardViewState extends State<DashboardView> {
     _cars = List<_CarItem>.of(_dummyCars);
   }
 
+  void _openProfile() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfileView()),
+    );
+  }
+
   Future<void> _confirmDelete(_CarItem item) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -177,24 +183,49 @@ class _DashboardViewState extends State<DashboardView> {
                         width: width * 0.3,
                         fit: BoxFit.contain,
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1D3157),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF4F6FB8)),
-                        ),
-                        child: const Text(
-                          'Admin',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1D3157),
+                              borderRadius: BorderRadius.circular(20),
+                              border:
+                                  Border.all(color: const Color(0xFF4F6FB8)),
+                            ),
+                            child: const Text(
+                              'Admin',
+                              style: TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: _openProfile,
+                            child: Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0x26FFFFFF),
+                                border: Border.all(
+                                    color: const Color(0x80FFFFFF)),
+                              ),
+                              child: const Icon(
+                                Icons.person_outline,
+                                size: 16,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

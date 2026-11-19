@@ -17,4 +17,9 @@ class AppRoutes {
   static const String adminActivity = '/admin/aktivitas';
   static const String adminProfile = '/admin/profile';
   static const String adminEditPassword = '/admin/edit-password';
+  static const String mitraDashboard = '/mitra/dashboard';
+  static const String mitraAddCar = '/mitra/tambah-mobil';
+  static const String mitraSupply = '/mitra/konfirmasi-supply';
+  static const String mitraProof = '/mitra/bukti-pembayaran';
+  static const String mitraActivity = '/mitra/aktivitas';
 }
