@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/routes/app_routes.dart';
+import '../user/dashboard_user_view.dart';
+import 'register_view.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -14,6 +16,8 @@ class _LoginViewState extends State<LoginView> {
   static const String _dummyPassword = 'admin123';
   static const String _dummyMitraEmail = 'mitra@rentra.com';
   static const String _dummyMitraPassword = 'mitra123';
+  static const String _dummyUserEmail = 'user@rentra.com';
+  static const String _dummyUserPassword = 'user12345';
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -53,7 +57,20 @@ class _LoginViewState extends State<LoginView> {
       return;
     }
 
+    if (email == _dummyUserEmail && password == _dummyUserPassword) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const DashboardUserView()),
+      );
+      return;
+    }
+
     _showMessage('Email atau password salah');
+  }
+
+  void _onCreateAccount() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const RegisterView()),
+    );
   }
 
   @override
@@ -136,13 +153,29 @@ class _LoginViewState extends State<LoginView> {
                         ),
                       ),
                     ),
-                    SizedBox(height: size.height * 0.1),
+                    SizedBox(height: size.height * 0.08),
                     SizedBox(
                       width: double.infinity,
                       height: 38,
                       child: ElevatedButton(
                         onPressed: _onSignIn,
                         child: const Text('Sign In'),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 38,
+                      child: OutlinedButton(
+                        onPressed: _onCreateAccount,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textPrimary,
+                          side: const BorderSide(color: Color(0x80FFFFFF)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('Create Account'),
                       ),
                     ),
                   ],

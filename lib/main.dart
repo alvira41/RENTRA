@@ -19,6 +19,10 @@ import 'views/mitra/mitra_car_form_view.dart';
 import 'views/mitra/konfirmasi_supply_view.dart';
 import 'views/mitra/bukti_mitra_view.dart';
 import 'views/mitra/aktivitas_mitra_view.dart';
+import 'views/auth/register_view.dart';
+import 'views/user/dashboard_user_view.dart';
+import 'views/admin/profile_view.dart';
+import 'views/admin/edit_password_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -82,6 +86,10 @@ class RentraApp extends StatelessWidget {
         AppRoutes.mitraSupply: (context) => const KonfirmasiSupplyView(),
         AppRoutes.mitraProof: (context) => const BuktiMitraView(),
         AppRoutes.mitraActivity: (context) => const AktivitasMitraView(),
+        AppRoutes.register: (context) => const RegisterView(),
+        AppRoutes.userDashboard: (context) => const DashboardUserView(),
+        AppRoutes.adminProfile: (context) => const ProfileView(),
+        AppRoutes.adminEditPassword: (context) => const EditPasswordView(),
       },
     );
   }

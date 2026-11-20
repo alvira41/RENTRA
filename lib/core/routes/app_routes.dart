@@ -22,4 +22,6 @@ class AppRoutes {
   static const String mitraSupply = '/mitra/konfirmasi-supply';
   static const String mitraProof = '/mitra/bukti-pembayaran';
   static const String mitraActivity = '/mitra/aktivitas';
+  static const String register = '/register';
+  static const String userDashboard = '/user/dashboard';
 }
