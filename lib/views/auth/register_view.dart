@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../controllers/auth_controller.dart';
 import '../../core/constants/app_colors.dart';
-import '../../services/auth_service.dart';
+import '../../core/routes/app_routes.dart';
 import '../widgets/rentra_scaffold.dart';
 
 class RegisterView extends StatefulWidget {
@@ -11,6 +12,7 @@ class RegisterView extends StatefulWidget {
 }
 
 class _RegisterViewState extends State<RegisterView> {
+  final AuthController _auth = AuthController();
   final _formKey = GlobalKey<FormState>();
   final _nama = TextEditingController();
   final _tanggalLahir = TextEditingController();
@@ -28,6 +30,7 @@ class _RegisterViewState extends State<RegisterView> {
 
   @override
   void dispose() {
+    _auth.dispose();
     for (final c in [
       _nama,
       _tanggalLahir,
@@ -65,22 +68,35 @@ class _RegisterViewState extends State<RegisterView> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
-    try {
-      await AuthService().registerUser(
-        name: _nama.text.trim(),
-        email: _email.text.trim(),
-        password: _password.text,
-        phone: _telepon.text.trim(),
-      );
-      if (!mounted) return;
-      _pesan('Akun berhasil dibuat. Silakan login');
-      Navigator.pop(context);
-    } catch (e) {
-      if (!mounted) return;
-      _pesan(e.toString().replaceFirst('Exception: ', ''));
-    } finally {
-      if (mounted) setState(() => _loading = false);
+    final ok = await _auth.registerUser(
+      email: _email.text.trim(),
+      password: _password.text,
+      namaUser: _nama.text.trim(),
+      jenisKelamin: _jenisKelamin,
+      tanggalLahir: _tanggalLahir.text.trim(),
+      alamat: _alamat.text.trim(),
+      noTeleponUser: _telepon.text.trim(),
+      noKtp: _nik.text.trim(),
+    );
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (!ok) {
+      _pesan(_auth.errorMessage ?? 'Pendaftaran gagal');
+      return;
     }
+
+    if (_auth.isLoggedIn) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.userDashboard,
+        (route) => false,
+      );
+      return;
+    }
+
+    _pesan('Akun berhasil dibuat. Cek email untuk konfirmasi, lalu login');
+    Navigator.pop(context);
   }
 
   InputDecoration _dekor(String hint, {Widget? suffix}) {
@@ -224,8 +240,8 @@ class _RegisterViewState extends State<RegisterView> {
                         ),
                       ),
                     ),
-                    validator: (v) => (v == null || v.length < 8)
-                        ? 'Minimal 8 karakter'
+                    validator: (v) => (v == null || v.length < 6)
+                        ? 'Minimal 6 karakter'
                         : null,
                   ),
                   _jarak(),

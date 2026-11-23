@@ -7,12 +7,16 @@ class UserPage extends StatelessWidget {
   final String? title;
   final Widget child;
   final int? navIndex;
+  final bool centerTitle;
+  final bool showBadge;
 
   const UserPage({
     super.key,
     this.title,
     required this.child,
     this.navIndex,
+    this.centerTitle = true,
+    this.showBadge = true,
   });
 
   @override
@@ -40,28 +44,31 @@ class UserPage extends StatelessWidget {
                       width: width * 0.3,
                       fit: BoxFit.contain,
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1D3157),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: const Color(0xFF4F6FB8)),
-                      ),
-                      child: const Text(
-                        'User',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                    if (showBadge)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1D3157),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFF4F6FB8)),
+                        ),
+                        child: const Text(
+                          'User',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 if (title != null) ...[
                   const SizedBox(height: 18),
-                  Center(
+                  Align(
+                    alignment:
+                        centerTitle ? Alignment.center : Alignment.centerLeft,
                     child: Text(
                       title!,
                       style: const TextStyle(

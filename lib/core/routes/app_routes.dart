@@ -4,6 +4,7 @@ class AppRoutes {
   static const String splash = '/';
   static const String landing = '/landing';
   static const String login = '/login';
+  static const String register = '/register';
 
   static const String adminDashboard = '/admin/dashboard';
   static const String adminAddCar = '/admin/tambah-mobil';
@@ -17,11 +18,16 @@ class AppRoutes {
   static const String adminActivity = '/admin/aktivitas';
   static const String adminProfile = '/admin/profile';
   static const String adminEditPassword = '/admin/edit-password';
+
   static const String mitraDashboard = '/mitra/dashboard';
   static const String mitraAddCar = '/mitra/tambah-mobil';
   static const String mitraSupply = '/mitra/konfirmasi-supply';
   static const String mitraProof = '/mitra/bukti-pembayaran';
   static const String mitraActivity = '/mitra/aktivitas';
-  static const String register = '/register';
+
   static const String userDashboard = '/user/dashboard';
+  static const String userStatus = '/user/status-rental';
+  static const String userHistory = '/user/riwayat';
+  static const String userProfile = '/user/profile';
+  static const String userPayment = '/user/payment';
 }

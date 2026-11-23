@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../controllers/auth_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/routes/app_routes.dart';
-import '../user/dashboard_user_view.dart';
 import 'register_view.dart';
 
 class LoginView extends StatefulWidget {
@@ -12,19 +12,14 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  static const String _dummyEmail = 'admin@rentra.com';
-  static const String _dummyPassword = 'admin123';
-  static const String _dummyMitraEmail = 'mitra@rentra.com';
-  static const String _dummyMitraPassword = 'mitra123';
-  static const String _dummyUserEmail = 'user@rentra.com';
-  static const String _dummyUserPassword = 'user12345';
-
+  final AuthController _auth = AuthController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
+    _auth.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -36,35 +31,37 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  void _onSignIn() {
+  Future<void> _onSignIn() async {
     FocusScope.of(context).unfocus();
 
-    final email = _emailController.text.trim();
-    final password = _passwordController.text;
+    final ok = await _auth.login(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
+    if (!mounted) return;
 
-    if (email.isEmpty || password.isEmpty) {
-      _showMessage('Email dan password wajib diisi');
+    if (!ok) {
+      _showMessage(_auth.errorMessage ?? 'Login gagal');
       return;
     }
 
-    if (email == _dummyEmail && password == _dummyPassword) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.adminDashboard);
-      return;
+    final String tujuan;
+    switch (_auth.role) {
+      case 'admin':
+        tujuan = AppRoutes.adminDashboard;
+        break;
+      case 'mitra':
+        tujuan = AppRoutes.mitraDashboard;
+        break;
+      case 'user':
+        tujuan = AppRoutes.userDashboard;
+        break;
+      default:
+        _showMessage('Role akun tidak dikenali');
+        return;
     }
 
-    if (email == _dummyMitraEmail && password == _dummyMitraPassword) {
-      Navigator.of(context).pushReplacementNamed(AppRoutes.mitraDashboard);
-      return;
-    }
-
-    if (email == _dummyUserEmail && password == _dummyUserPassword) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DashboardUserView()),
-      );
-      return;
-    }
-
-    _showMessage('Email atau password salah');
+    Navigator.of(context).pushNamedAndRemoveUntil(tujuan, (route) => false);
   }
 
   void _onCreateAccount() {
@@ -154,12 +151,23 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                     SizedBox(height: size.height * 0.08),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 38,
-                      child: ElevatedButton(
-                        onPressed: _onSignIn,
-                        child: const Text('Sign In'),
+                    ListenableBuilder(
+                      listenable: _auth,
+                      builder: (context, _) => SizedBox(
+                        width: double.infinity,
+                        height: 38,
+                        child: ElevatedButton(
+                          onPressed: _auth.isLoading ? null : _onSignIn,
+                          child: _auth.isLoading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Sign In'),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 10),

@@ -23,10 +23,14 @@ import 'views/auth/register_view.dart';
 import 'views/user/dashboard_user_view.dart';
 import 'views/admin/profile_view.dart';
 import 'views/admin/edit_password_view.dart';
+import 'views/user/status_rental_view.dart';
+import 'views/user/riwayat_view.dart';
+import 'views/user/profile_user_view.dart';
+import 'views/user/payment_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SupabaseConfig.initialize();
+  await SupabaseConfig.init();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -90,6 +94,10 @@ class RentraApp extends StatelessWidget {
         AppRoutes.userDashboard: (context) => const DashboardUserView(),
         AppRoutes.adminProfile: (context) => const ProfileView(),
         AppRoutes.adminEditPassword: (context) => const EditPasswordView(),
+        AppRoutes.userStatus: (context) => const StatusRentalView(),
+        AppRoutes.userHistory: (context) => const RiwayatView(),
+        AppRoutes.userProfile: (context) => const ProfileUserView(),
+        AppRoutes.userPayment: (context) => const PaymentView(),
       },
     );
   }

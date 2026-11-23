@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../admin/profile_view.dart';
 import '../user/dashboard_user_view.dart';
+import '../user/profile_user_view.dart';
+import '../user/riwayat_view.dart';
+import '../user/status_rental_view.dart';
 
 class UserBottomBar extends StatelessWidget {
   final int currentIndex;
@@ -16,18 +18,16 @@ class UserBottomBar extends StatelessWidget {
 
   void _go(BuildContext context, int i) {
     if (i == currentIndex) return;
-    if (i == 0) {
-      Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (_) => const DashboardUserView()));
-      return;
-    }
-    if (i == 3) {
-      Navigator.push(
-          context, MaterialPageRoute(builder: (_) => const ProfileView()));
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Halaman ini belum tersedia')),
+    final Widget page = i == 0
+        ? const DashboardUserView()
+        : i == 1
+            ? const StatusRentalView()
+            : i == 2
+                ? const RiwayatView()
+                : const ProfileUserView();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => page),
     );
   }
 
