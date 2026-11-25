@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../controllers/katalog_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../widgets/mitra_mobil_card.dart';
 import '../widgets/user_page.dart';
 import 'checkout_view.dart';
@@ -12,52 +14,38 @@ class DashboardUserView extends StatefulWidget {
 }
 
 class _DashboardUserViewState extends State<DashboardUserView> {
-  static const _filters = ['Semua', 'Matic', 'Manual'];
-
+  late final KatalogController _katalog;
   String _filter = 'Semua';
 
-  final List<MitraMobilData> _mobil = [
-    MitraMobilData(
-        nama: 'PORSCHE 911 GT3 RS',
-        merk: 'Porsche',
-        nopol: 'N V174 OCT',
-        spesifikasi: 'Matic',
-        kapasitas: '2 orang',
-        bbm: 'Pertamax',
-        harga: 500000,
-        status: 'Tersedia'),
-    MitraMobilData(
-        nama: 'PORSCHE 911 GT3 RS',
-        merk: 'Porsche',
-        nopol: 'N V174 OCT',
-        spesifikasi: 'Matic',
-        kapasitas: '2 orang',
-        bbm: 'Pertamax',
-        harga: 500000,
-        status: 'Tersedia'),
-    MitraMobilData(
-        nama: 'PORSCHE 911 GT3 RS',
-        merk: 'Porsche',
-        nopol: 'N V174 OCT',
-        spesifikasi: 'Manual',
-        kapasitas: '2 orang',
-        bbm: 'Pertamax',
-        harga: 500000,
-        status: 'Tersedia'),
-    MitraMobilData(
-        nama: 'PORSCHE 911 GT3 RS',
-        merk: 'Porsche',
-        nopol: 'N V174 OCT',
-        spesifikasi: 'Manual',
-        kapasitas: '2 orang',
-        bbm: 'Pertamax',
-        harga: 500000,
-        status: 'Disewa'),
-  ];
+  List<String> get _filters => [
+        'Semua',
+        for (final k in _katalog.categories) k['name']?.toString() ?? '-',
+      ];
+
+  List<MitraMobilData> get _mobil => _katalog.katalog
+      .map((row) => MitraMobilData.fromKatalog(row))
+      .toList();
 
   List<MitraMobilData> get _tampil => _filter == 'Semua'
       ? _mobil
-      : _mobil.where((m) => m.spesifikasi == _filter).toList();
+      : _mobil.where((m) => m.merk == _filter).toList();
+
+  @override
+  void initState() {
+    super.initState();
+    _katalog = AppControllers.of(context).katalog;
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    await _katalog.loadCategories();
+    final ok = await _katalog.loadKatalog();
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_katalog.errorMessage ?? 'Gagal memuat katalog')),
+      );
+    }
+  }
 
   void _pesan(MitraMobilData m) {
     Navigator.push(
@@ -68,54 +56,62 @@ class _DashboardUserViewState extends State<DashboardUserView> {
 
   @override
   Widget build(BuildContext context) {
-    final data = _tampil;
-
-    return UserPage(
-      title: 'KATALOG MOBIL',
-      navIndex: 0,
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+    return ListenableBuilder(
+      listenable: _katalog,
+      builder: (context, _) {
+        final data = _tampil;
+        return UserPage(
+          title: 'KATALOG MOBIL',
+          navIndex: 0,
+          child: Column(
             children: [
-              for (final f in _filters)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: _FilterChip(
-                    label: f,
-                    selected: _filter == f,
-                    onTap: () => setState(() => _filter = f),
-                  ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (final f in _filters)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _FilterChip(
+                          label: f,
+                          selected: _filter == f,
+                          onTap: () => setState(() => _filter = f),
+                        ),
+                      ),
+                  ],
                 ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: data.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Belum ada mobil untuk kategori ini',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: data.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final m = data[index];
+                          return _UserCarCard(
+                            mobil: m,
+                            onPesan:
+                                m.status == 'Tersedia' ? () => _pesan(m) : null,
+                          );
+                        },
+                      ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: data.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Belum ada mobil untuk tipe ini',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  )
-                : ListView.separated(
-                    itemCount: data.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final m = data[index];
-                      return _UserCarCard(
-                        mobil: m,
-                        onPesan: m.status == 'Tersedia' ? () => _pesan(m) : null,
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -198,12 +194,19 @@ class _UserCarCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: AspectRatio(
                     aspectRatio: 1.5,
-                    child: Image.asset(
-                      'assets/images/car1.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(color: const Color(0xFF1F2937)),
-                    ),
+                      child: mobil.deskripsi.isEmpty
+                          ? Image.asset(
+                              'assets/images/car1.png',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: const Color(0xFF1F2937)),
+                            )
+                          : Image.network(
+                              mobil.deskripsi,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: const Color(0xFF1F2937)),
+                            ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -252,11 +255,8 @@ class _UserCarCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                _line('Merk Mobil', mobil.merk),
-                _line('Nomor Polisi', mobil.nopol),
-                _line('Spesifikasi', mobil.spesifikasi),
-                _line('Kapasitas penumpang', mobil.kapasitas),
-                _line('Jenis BBM', mobil.bbm),
+                _line('Kategori', mobil.merk),
+                _line('Stok', '${mobil.stok}'),
                 const SizedBox(height: 4),
                 const Text(
                   'Harga tidak termasuk BBM',

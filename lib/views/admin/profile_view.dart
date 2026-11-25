@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../controllers/auth_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../../core/routes/app_routes.dart';
 import '../widgets/rentra_scaffold.dart';
 import 'edit_password_view.dart';
@@ -14,23 +15,19 @@ class ProfileView extends StatefulWidget {
 }
 
 class _ProfileViewState extends State<ProfileView> {
-  final AuthController _auth = AuthController();
+  late final AuthController _auth;
   bool _siap = false;
 
   @override
   void initState() {
     super.initState();
-    _muat();
+    _auth = AppControllers.of(context).auth;
+    _siap = _auth.profile != null;
+    if (!_siap) _muatUlang();
   }
 
-  @override
-  void dispose() {
-    _auth.dispose();
-    super.dispose();
-  }
-
-  Future<void> _muat() async {
-    await _auth.restoreSession();
+  Future<void> _muatUlang() async {
+    if (_auth.role == null) await _auth.restoreSession();
     if (mounted) setState(() => _siap = true);
   }
 

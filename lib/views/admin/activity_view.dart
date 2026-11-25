@@ -1,61 +1,106 @@
 import 'package:flutter/material.dart';
+import '../../controllers/order_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../../core/routes/app_routes.dart';
+import '../../core/utils/formatter.dart';
 import '../widgets/add_options_dialog.dart';
 import '../widgets/admin_bottom_bar.dart';
 
 class _ActivityItem {
   const _ActivityItem({
+    required this.idOrder,
+    required this.transactionCode,
     required this.carName,
     required this.customer,
     required this.phone,
     required this.startDate,
     required this.endDate,
     required this.price,
+    required this.image,
     required this.status,
+    required this.denda,
   });
 
+  final int idOrder;
+  final String transactionCode;
   final String carName;
   final String customer;
   final String phone;
   final String startDate;
   final String endDate;
   final String price;
+  final String image;
   final String status;
+  final num denda;
 }
 
-const List<_ActivityItem> _dummyActivities = [
-  _ActivityItem(
-    carName: 'PORSCHE 911 GT3 RS',
-    customer: 'Budi Santoso',
-    phone: '081234567890',
-    startDate: '10 Nov 2026',
-    endDate: '12 Nov 2026',
-    price: 'Rp.500.000',
-    status: 'Disewa',
-  ),
-  _ActivityItem(
-    carName: 'PORSCHE 911 GT3 RS',
-    customer: 'Siti Aminah',
-    phone: '082198765432',
-    startDate: '08 Nov 2026',
-    endDate: '10 Nov 2026',
-    price: 'Rp.500.000',
-    status: 'Selesai',
-  ),
-  _ActivityItem(
-    carName: 'PORSCHE 911 GT3 RS',
-    customer: 'Andi Wijaya',
-    phone: '085611223344',
-    startDate: '01 Nov 2026',
-    endDate: '04 Nov 2026',
-    price: 'Rp.500.000',
-    status: 'Terlambat',
-  ),
-];
-
-class ActivityView extends StatelessWidget {
+class ActivityView extends StatefulWidget {
   const ActivityView({super.key});
+
+  @override
+  State<ActivityView> createState() => _ActivityViewState();
+}
+
+class _ActivityViewState extends State<ActivityView> {
+  late final OrderController _order;
+
+  List<_ActivityItem> get _items => _order.orders.map(_dariBaris).toList();
+
+  @override
+  void initState() {
+    super.initState();
+    _order = AppControllers.of(context).order;
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    final hasil = await Future.wait([
+      _order.loadAllOrders(),
+      _order.loadDenda(),
+      _order.loadStats(),
+    ]);
+    if (!hasil.every((e) => e) && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_order.errorMessage ?? 'Gagal memuat aktivitas')),
+      );
+    }
+  }
+
+  _ActivityItem _dariBaris(Map<String, dynamic> row) {
+    final details = List<Map<String, dynamic>>.from(
+      (row['order_details'] as List?) ?? const [],
+    );
+    final detail = details.isEmpty ? <String, dynamic>{} : details.first;
+    final katalog = (detail['katalog'] as Map?)?.cast<String, dynamic>();
+    final user = (row['app_user'] as Map?)?.cast<String, dynamic>();
+    final mulai = DateTime.tryParse(detail['tanggal_pinjam']?.toString() ?? '');
+    final kembali = DateTime.tryParse(detail['tanggal_kembali']?.toString() ?? '');
+
+    num denda = 0;
+    for (final d in details) {
+      final dendaRows = List<Map<String, dynamic>>.from(
+        (d['denda'] as List?) ?? const [],
+      );
+      for (final itemDenda in dendaRows) {
+        denda += (itemDenda['total_denda'] as num?) ?? 0;
+      }
+    }
+
+    return _ActivityItem(
+      idOrder: (row['id_order'] as num?)?.toInt() ?? 0,
+      transactionCode: row['transaction_code']?.toString() ?? '-',
+      carName: katalog?['nama_mobil']?.toString() ?? '-',
+      customer: user?['nama_user']?.toString() ?? '-',
+      phone: user?['no_telepon_user']?.toString() ?? '-',
+      startDate: Formatter.tanggal(mulai),
+      endDate: Formatter.tanggal(kembali),
+      price: Formatter.rupiah(row['total_price'] as num?),
+      image: katalog?['image']?.toString() ?? '',
+      status: row['status']?.toString() ?? '-',
+      denda: denda,
+    );
+  }
 
   String _today() {
     final now = DateTime.now();
@@ -63,6 +108,9 @@ class ActivityView extends StatelessWidget {
     final month = now.month.toString().padLeft(2, '0');
     return '$day-$month-${now.year}';
   }
+
+  String _angka(String key) =>
+      (_order.stats[key]?.toString() ?? '0').padLeft(3, '0');
 
   @override
   Widget build(BuildContext context) {
@@ -90,83 +138,120 @@ class ActivityView extends StatelessWidget {
           ),
           SafeArea(
             bottom: false,
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(sidePadding, 16, sidePadding, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Image.asset(
-                    'assets/images/logo.png',
-                    width: width * 0.3,
-                    fit: BoxFit.contain,
+            child: ListenableBuilder(
+              listenable: _order,
+              builder: (context, _) {
+                final items = _items;
+                return SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    sidePadding,
+                    16,
+                    sidePadding,
+                    16,
                   ),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'AKTIVITAS',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _StatCard(
-                          icon: Icons.account_balance_wallet_outlined,
-                          label: 'Pendapatan',
-                          value: 'Rp 0.000.000',
+                      Image.asset(
+                        'assets/images/logo.png',
+                        width: width * 0.3,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'AKTIVITAS',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.3,
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _StatCard(
-                          icon: Icons.calendar_today_outlined,
-                          label: 'Tanggal',
-                          value: _today(),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.account_balance_wallet_outlined,
+                              label: 'Pendapatan',
+                              value: Formatter.rupiah(
+                                _order.stats['total_pendapatan'] as num?,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.calendar_today_outlined,
+                              label: 'Tanggal',
+                              value: _today(),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.directions_car_outlined,
+                              label: 'Total Mobil',
+                              value: _angka('total_mobil'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _StatCard(
+                              icon: Icons.key_outlined,
+                              label: 'Sewa Aktif',
+                              value: _angka('order_ongoing'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Denda tercatat: ${_order.dendaList.length}',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 9,
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      if (_order.isLoading && items.isEmpty)
+                        const Center(child: CircularProgressIndicator())
+                      else if (items.isEmpty)
+                        const Center(
+                          child: Text(
+                            'Belum ada aktivitas',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        )
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: items.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return _ActivityCard(
+                              item: item,
+                              onProof: () => Navigator.of(context).pushNamed(
+                                AppRoutes.adminPaymentProof,
+                                arguments: item.idOrder,
+                              ),
+                            );
+                          },
+                        ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  const Row(
-                    children: [
-                      Expanded(
-                        child: _StatCard(
-                          icon: Icons.directions_car_outlined,
-                          label: 'Total Mobil',
-                          value: '000',
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: _StatCard(
-                          icon: Icons.key_outlined,
-                          label: 'Sewa Aktif',
-                          value: '4',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _dummyActivities.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      return _ActivityCard(
-                        item: _dummyActivities[index],
-                        onProof: () => Navigator.of(context)
-                            .pushNamed(AppRoutes.adminPaymentProof),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ],
@@ -248,10 +333,14 @@ class _ActivityCard extends StatelessWidget {
 
   Color _statusColor() {
     switch (item.status) {
-      case 'Selesai':
+      case 'completed':
         return const Color(0xFF4ADE80);
-      case 'Terlambat':
+      case 'rejected':
+      case 'cancelled':
         return const Color(0xFFEF4444);
+      case 'ongoing':
+      case 'confirmed':
+        return const Color(0xFF60A5FA);
       default:
         return const Color(0xFFFB923C);
     }
@@ -280,16 +369,33 @@ class _ActivityCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: AspectRatio(
                     aspectRatio: 1.5,
-                    child: Image.asset(
-                      'assets/images/car1.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(color: const Color(0xFF1F2937)),
-                    ),
+                    child: item.image.isEmpty
+                        ? Image.asset(
+                            'assets/images/car1.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(color: const Color(0xFF1F2937)),
+                          )
+                        : Image.network(
+                            item.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(color: const Color(0xFF1F2937)),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 6),
-                _Chip(label: item.status, color: statusColor),
+                _Chip(
+                  label: Formatter.statusOrder(item.status),
+                  color: statusColor,
+                ),
+                if (item.denda > 0) ...[
+                  const SizedBox(height: 4),
+                  _Chip(
+                    label: 'Denda ${Formatter.rupiah(item.denda)}',
+                    color: const Color(0xFFEF4444),
+                  ),
+                ],
                 const SizedBox(height: 4),
                 _Chip(
                   label: 'Bukti',
@@ -315,6 +421,7 @@ class _ActivityCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
+                _DetailLine(label: 'Kode', value: item.transactionCode),
                 _DetailLine(label: 'Nama', value: item.customer),
                 _DetailLine(label: 'No telepon', value: item.phone),
                 _DetailLine(label: 'Tanggal sewa', value: item.startDate),
@@ -382,6 +489,8 @@ class _Chip extends StatelessWidget {
         ),
         child: Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: color,
             fontSize: 8,

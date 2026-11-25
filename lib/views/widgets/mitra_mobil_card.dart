@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 
 class MitraMobilData {
+  final int id;
   final String nama;
   final String merk;
   final String nopol;
@@ -9,6 +10,7 @@ class MitraMobilData {
   final String kapasitas;
   final String bbm;
   final int harga;
+  final int stok;
   final String deskripsi;
   String status;
 
@@ -21,8 +23,46 @@ class MitraMobilData {
     required this.bbm,
     required this.harga,
     required this.status,
+    this.id = 0,
+    this.stok = 0,
     this.deskripsi = '',
   });
+
+  factory MitraMobilData.fromKatalog(Map<String, dynamic> row) {
+    final stok = (row['total_stock'] as num?)?.toInt() ?? 0;
+    final kategori = row['category'] as Map?;
+    return MitraMobilData(
+      id: (row['id_mobil'] as num?)?.toInt() ?? 0,
+      nama: row['nama_mobil']?.toString() ?? '-',
+      merk: kategori?['name']?.toString() ?? '-',
+      nopol: '-',
+      spesifikasi: '-',
+      kapasitas: '-',
+      bbm: '-',
+      harga: (row['price'] as num?)?.toInt() ?? 0,
+      stok: stok,
+      deskripsi: row['image']?.toString() ?? '',
+      status: stok > 0 ? 'Tersedia' : 'Disewa',
+    );
+  }
+
+  factory MitraMobilData.fromKatalogMitra(Map<String, dynamic> row) {
+    final stok = (row['total_stock_mitra'] as num?)?.toInt() ?? 0;
+    final kategori = row['category'] as Map?;
+    return MitraMobilData(
+      id: (row['id_mobil_mitra'] as num?)?.toInt() ?? 0,
+      nama: row['nama_mobil_mitra']?.toString() ?? '-',
+      merk: kategori?['name']?.toString() ?? '-',
+      nopol: '-',
+      spesifikasi: '-',
+      kapasitas: '-',
+      bbm: '-',
+      harga: (row['price'] as num?)?.toInt() ?? 0,
+      stok: stok,
+      deskripsi: row['image_mitra']?.toString() ?? '',
+      status: stok > 0 ? 'Tersedia' : 'Disewa',
+    );
+  }
 }
 
 String rupiah(int v) {

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../controllers/base_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/image_picker_helper.dart';
 import '../widgets/mitra_mobil_card.dart';
 import '../widgets/rentra_scaffold.dart';
 
@@ -11,16 +13,22 @@ class PaymentView extends StatefulWidget {
 }
 
 class _PaymentViewState extends State<PaymentView> {
-  bool _bukti = false;
+  UploadFile? _bukti;
+
+  Future<void> _pilihBukti() async {
+    final file = await pickUploadFile();
+    if (file == null) return;
+    setState(() => _bukti = file);
+  }
 
   void _confirm() {
-    if (!_bukti) {
+    if (_bukti == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Unggah bukti pembayaran dulu')),
       );
       return;
     }
-    Navigator.pop(context, true);
+    Navigator.pop(context, _bukti);
   }
 
   @override
@@ -86,7 +94,7 @@ class _PaymentViewState extends State<PaymentView> {
                         ),
                         const SizedBox(height: 12),
                         GestureDetector(
-                          onTap: () => setState(() => _bukti = true),
+                          onTap: _pilihBukti,
                           child: Container(
                             width: double.infinity,
                             height: 120,
@@ -94,7 +102,7 @@ class _PaymentViewState extends State<PaymentView> {
                               color: const Color(0x26FFFFFF),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: _bukti
+                                color: _bukti != null
                                     ? const Color(0xFF4ADE80)
                                     : const Color(0x80FFFFFF),
                               ),
@@ -103,24 +111,22 @@ class _PaymentViewState extends State<PaymentView> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  _bukti
+                                  _bukti != null
                                       ? Icons.check_circle_outline
                                       : Icons.add_a_photo_outlined,
                                   size: 38,
-                                  color: _bukti
+                                  color: _bukti != null
                                       ? const Color(0xFF4ADE80)
                                       : AppColors.textPrimary,
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  _bukti
-                                      ? 'bukti_pembayaran.jpg'
-                                      : 'Klik untuk unggah foto',
+                                  _bukti?.name ?? 'Klik untuk unggah foto',
                                   style: const TextStyle(
                                       color: AppColors.textPrimary,
                                       fontSize: 10),
                                 ),
-                                if (_bukti)
+                                if (_bukti != null)
                                   const Padding(
                                     padding: EdgeInsets.only(top: 2),
                                     child: Text(

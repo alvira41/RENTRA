@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import '../../controllers/supply_controller.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../widgets/mitra_mobil_card.dart';
 import '../widgets/mitra_page.dart';
 import 'bukti_mitra_view.dart';
 
 class _Permintaan {
-  final MitraMobilData mobil;
-  final String pemohon;
-  final String telepon;
-  final String tanggalSewa;
-  final String tanggalKembali;
-  String status;
+  const _Permintaan({
+    required this.id,
+    required this.tanggalSupply,
+    required this.tanggalKembali,
+    required this.status,
+  });
 
-  _Permintaan(this.mobil, this.pemohon, this.telepon, this.tanggalSewa,
-      this.tanggalKembali, this.status);
+  final int id;
+  final String tanggalSupply;
+  final String tanggalKembali;
+  final String status;
 }
 
 class KonfirmasiSupplyView extends StatefulWidget {
@@ -23,24 +27,40 @@ class KonfirmasiSupplyView extends StatefulWidget {
 }
 
 class _KonfirmasiSupplyViewState extends State<KonfirmasiSupplyView> {
-  static MitraMobilData _porsche() => MitraMobilData(
-      nama: 'PORSCHE 911 GT3 RS',
-      merk: 'Porsche',
-      nopol: 'N 1774 DCT',
-      spesifikasi: 'Matic',
-      kapasitas: '2 orang',
-      bbm: 'Pertamax',
-      harga: 500000,
-      status: 'Menunggu');
+  late final SupplyController _supply;
+  late final String? _idMitra;
+  bool _loading = true;
 
-  final List<_Permintaan> _data = [
-    _Permintaan(_porsche(), 'Nama Admin', '0812xxxxxxx', '-', '-', 'Menunggu'),
-    _Permintaan(_porsche(), 'Nama Admin', '0812xxxxxxx', '-', '-', 'Menunggu'),
-    _Permintaan(_porsche(), 'Nama Admin', '0812xxxxxxx', '-', '-', 'Menunggu'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    final controllers = AppControllers.of(context);
+    _supply = controllers.supply;
+    _idMitra = controllers.auth.uid;
+    _muat();
+  }
 
-  Future<void> _putuskan(int i, bool terima) async {
-    final ok = await showDialog<bool>(
+  Future<void> _muat() async {
+    final ok = await _supply.loadSupplies(status: 'pending', idMitra: _idMitra);
+    if (!mounted) return;
+    setState(() => _loading = false);
+    if (!ok) {
+      _pesan(_supply.errorMessage ?? 'Gagal memuat supply');
+    }
+  }
+
+  List<_Permintaan> get _data => _supply.supplies.map((row) {
+        final kembali = row['tanggal_kembali']?.toString();
+        return _Permintaan(
+          id: (row['id_supply'] as num?)?.toInt() ?? 0,
+          tanggalSupply: row['tanggal_supply']?.toString() ?? '-',
+          tanggalKembali: (kembali == null || kembali.isEmpty) ? '-' : kembali,
+          status: row['status']?.toString() ?? 'Menunggu',
+        );
+      }).toList();
+
+  Future<void> _putuskan(_Permintaan item, bool terima) async {
+    final okDialog = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: Text(terima ? 'Terima Supply' : 'Tolak Supply'),
@@ -49,19 +69,29 @@ class _KonfirmasiSupplyViewState extends State<KonfirmasiSupplyView> {
             : 'Tolak permintaan supply ini?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(terima ? 'Terima' : 'Tolak')),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(terima ? 'Terima' : 'Tolak'),
+          ),
         ],
       ),
     );
-    if (ok != true || !mounted) return;
-    setState(() {
-      _data[i].status = terima ? 'Diterima' : 'Ditolak';
-      _data[i].mobil.status = _data[i].status;
-    });
+    if (okDialog != true || !mounted) return;
+
+    final ok = terima
+        ? await _supply.approve(item.id)
+        : await _supply.reject(item.id);
+    if (!mounted) return;
+    _pesan(ok
+        ? (terima ? 'Supply diterima' : 'Supply ditolak')
+        : _supply.errorMessage ?? 'Gagal memperbarui supply');
+  }
+
+  void _pesan(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   @override
@@ -69,50 +99,75 @@ class _KonfirmasiSupplyViewState extends State<KonfirmasiSupplyView> {
     return MitraPage(
       title: 'KONFIRMASI SUPPLY',
       navIndex: 1,
-      child: ListView.separated(
-        itemCount: _data.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (_, i) {
-          final d = _data[i];
-          final menunggu = d.status == 'Menunggu';
-          return MitraMobilCard(
-            data: d.mobil,
-            actions: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Pemohon : ${d.pemohon}',
-                    style: const TextStyle(color: Colors.white, fontSize: 9)),
-                Text('No telepon : ${d.telepon}',
-                    style: const TextStyle(color: Colors.white, fontSize: 9)),
-                Text('Tanggal sewa : ${d.tanggalSewa}',
-                    style: const TextStyle(color: Colors.white, fontSize: 9)),
-                Text('Tanggal kembali : ${d.tanggalKembali}',
-                    style: const TextStyle(color: Colors.white, fontSize: 9)),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+      child: ListenableBuilder(
+        listenable: _supply,
+        builder: (context, _) {
+          final data = _data;
+          if (_loading) return const Center(child: CircularProgressIndicator());
+          if (data.isEmpty) {
+            return const Center(
+              child: Text('Tidak ada supply menunggu konfirmasi',
+                  style: TextStyle(color: Colors.white70, fontSize: 11)),
+            );
+          }
+          return ListView.separated(
+            itemCount: data.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (_, i) {
+              final d = data[i];
+              return MitraMobilCard(
+                data: MitraMobilData(
+                  nama: 'Supply #${d.id}',
+                  merk: '-',
+                  nopol: '-',
+                  spesifikasi: '-',
+                  kapasitas: '-',
+                  bbm: '-',
+                  harga: 0,
+                  status: d.status == 'pending' ? 'Menunggu' : d.status,
+                ),
+                actions: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SmallButton(
-                        label: 'Lihat Bukti',
-                        icon: Icons.receipt_long,
-                        onTap: () => Navigator.push(
+                    Text('Tanggal supply : ${d.tanggalSupply}',
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 9)),
+                    Text('Tanggal kembali : ${d.tanggalKembali}',
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 9)),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        SmallButton(
+                          label: 'Lihat Bukti',
+                          icon: Icons.receipt_long,
+                          onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (_) => const BuktiMitraView()))),
-                    const SizedBox(width: 6),
-                    SmallButton(
-                        label: 'Tolak',
-                        color: const Color(0xFFEF4444),
-                        onTap: menunggu ? () => _putuskan(i, false) : null),
-                    const SizedBox(width: 6),
-                    SmallButton(
-                        label: 'Terima',
-                        color: const Color(0xFF4ADE80),
-                        onTap: menunggu ? () => _putuskan(i, true) : null),
+                              builder: (_) =>
+                                  BuktiMitraView(idSupply: d.id),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        SmallButton(
+                          label: 'Tolak',
+                          color: const Color(0xFFEF4444),
+                          onTap: () => _putuskan(d, false),
+                        ),
+                        const SizedBox(width: 6),
+                        SmallButton(
+                          label: 'Terima',
+                          color: const Color(0xFF4ADE80),
+                          onTap: () => _putuskan(d, true),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),

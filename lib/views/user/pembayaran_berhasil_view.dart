@@ -22,7 +22,7 @@ class _PembayaranBerhasilViewState extends State<PembayaranBerhasilView> {
   void initState() {
     super.initState();
     _waktu = DateTime.now();
-    _idOrder = _waktu.millisecondsSinceEpoch.toString();
+    _idOrder = widget.pesanan.idOrder?.toString() ?? '-';
   }
 
   void _selesai() {

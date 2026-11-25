@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../../core/routes/app_routes.dart';
 
 class SplashView extends StatefulWidget {
@@ -14,7 +15,6 @@ class _SplashViewState extends State<SplashView>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _fade;
-  Timer? _timer;
 
   @override
   void initState() {
@@ -25,16 +25,29 @@ class _SplashViewState extends State<SplashView>
     );
     _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
+    _berandaSetelahSesi();
+  }
 
-    _timer = Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed(AppRoutes.landing);
-    });
+  Future<void> _berandaSetelahSesi() async {
+    final auth = AppControllers.of(context).auth;
+    final hasil = await Future.wait<Object?>([
+      auth.restoreSession(),
+      Future<void>.delayed(const Duration(seconds: 2)),
+    ]);
+    if (!mounted) return;
+
+    final peran = hasil.first == true ? auth.role : null;
+    final tujuan = switch (peran) {
+      'admin' => AppRoutes.adminDashboard,
+      'mitra' => AppRoutes.mitraDashboard,
+      'user' => AppRoutes.userDashboard,
+      _ => AppRoutes.landing,
+    };
+    Navigator.of(context).pushReplacementNamed(tujuan);
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _controller.dispose();
     super.dispose();
   }

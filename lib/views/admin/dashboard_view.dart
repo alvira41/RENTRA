@@ -1,74 +1,32 @@
 import 'package:flutter/material.dart';
+import '../../controllers/katalog_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../../core/routes/app_routes.dart';
+import '../../core/utils/formatter.dart';
 import '../widgets/add_options_dialog.dart';
 import '../widgets/admin_bottom_bar.dart';
 import 'profile_view.dart';
 
 class _CarItem {
   const _CarItem({
+    required this.id,
     required this.name,
-    required this.brand,
-    required this.plate,
-    required this.spec,
-    required this.capacity,
-    required this.fuel,
+    required this.kategori,
+    required this.stok,
     required this.price,
-    required this.available,
+    required this.image,
   });
 
+  final int id;
   final String name;
-  final String brand;
-  final String plate;
-  final String spec;
-  final String capacity;
-  final String fuel;
+  final String kategori;
+  final int stok;
   final String price;
-  final bool available;
-}
+  final String image;
 
-const List<_CarItem> _dummyCars = [
-  _CarItem(
-    name: 'PORSCHE 911 GT3 RS',
-    brand: 'Porsche',
-    plate: 'N V174 OCT',
-    spec: 'Manic',
-    capacity: '2 orang',
-    fuel: 'Pertamax',
-    price: 'Rp.500.000 / hari',
-    available: true,
-  ),
-  _CarItem(
-    name: 'PORSCHE 911 GT3 RS',
-    brand: 'Porsche',
-    plate: 'N V174 OCT',
-    spec: 'Manic',
-    capacity: '2 orang',
-    fuel: 'Pertamax',
-    price: 'Rp.500.000 / hari',
-    available: true,
-  ),
-  _CarItem(
-    name: 'PORSCHE 911 GT3 RS',
-    brand: 'Porsche',
-    plate: 'N V174 OCT',
-    spec: 'Manic',
-    capacity: '2 orang',
-    fuel: 'Pertamax',
-    price: 'Rp.500.000 / hari',
-    available: true,
-  ),
-  _CarItem(
-    name: 'PORSCHE 911 GT3 RS',
-    brand: 'Porsche',
-    plate: 'N V174 OCT',
-    spec: 'Manic',
-    capacity: '2 orang',
-    fuel: 'Pertamax',
-    price: 'Rp.500.000 / hari',
-    available: true,
-  ),
-];
+  bool get available => stok > 0;
+}
 
 class DashboardView extends StatefulWidget {
   const DashboardView({super.key});
@@ -78,12 +36,36 @@ class DashboardView extends StatefulWidget {
 }
 
 class _DashboardViewState extends State<DashboardView> {
-  late final List<_CarItem> _cars;
+  late final KatalogController _katalog;
+
+  List<_CarItem> get _cars => _katalog.katalog.map(_dariBaris).toList();
+
+  _CarItem _dariBaris(Map<String, dynamic> row) {
+    final kategori = row['category'] as Map?;
+    return _CarItem(
+      id: (row['id_mobil'] as num?)?.toInt() ?? 0,
+      name: row['nama_mobil']?.toString() ?? '-',
+      kategori: kategori?['name']?.toString() ?? '-',
+      stok: (row['total_stock'] as num?)?.toInt() ?? 0,
+      price: Formatter.rupiah(row['price'] as num?),
+      image: row['image']?.toString() ?? '',
+    );
+  }
 
   @override
   void initState() {
     super.initState();
-    _cars = List<_CarItem>.of(_dummyCars);
+    _katalog = AppControllers.of(context).katalog;
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    final ok = await _katalog.loadKatalog();
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_katalog.errorMessage ?? 'Gagal memuat katalog')),
+      );
+    }
   }
 
   void _openProfile() {
@@ -138,9 +120,14 @@ class _DashboardViewState extends State<DashboardView> {
 
     if (confirmed != true || !mounted) return;
 
-    setState(() => _cars.remove(item));
+    final ok = await _katalog.deleteKatalog(item.id);
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Mobil dihapus')),
+      SnackBar(
+        content: Text(
+          ok ? 'Mobil dihapus' : _katalog.errorMessage ?? 'Gagal menghapus mobil',
+        ),
+      ),
     );
   }
 
@@ -243,36 +230,41 @@ class _DashboardViewState extends State<DashboardView> {
                   ),
                 ),
                 Expanded(
-                  child: _cars.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'Belum ada mobil di katalog',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
+                  child: ListenableBuilder(
+                    listenable: _katalog,
+                    builder: (context, _) => _cars.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'Belum ada mobil di katalog',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
                             ),
+                          )
+                        : ListView.separated(
+                            padding: EdgeInsets.fromLTRB(
+                              sidePadding,
+                              8,
+                              sidePadding,
+                              16,
+                            ),
+                            itemCount: _cars.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final item = _cars[index];
+                              return _CarCard(
+                                item: item,
+                                onEdit: () => Navigator.of(context).pushNamed(
+                                  AppRoutes.adminEditCar,
+                                  arguments: item.id,
+                                ),
+                                onDelete: () => _confirmDelete(item),
+                              );
+                            },
                           ),
-                        )
-                      : ListView.separated(
-                          padding: EdgeInsets.fromLTRB(
-                            sidePadding,
-                            8,
-                            sidePadding,
-                            16,
-                          ),
-                          itemCount: _cars.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final item = _cars[index];
-                            return _CarCard(
-                              item: item,
-                              onEdit: () => Navigator.of(context)
-                                  .pushNamed(AppRoutes.adminEditCar),
-                              onDelete: () => _confirmDelete(item),
-                            );
-                          },
-                        ),
+                  ),
                 ),
               ],
             ),
@@ -316,12 +308,19 @@ class _CarCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: AspectRatio(
                     aspectRatio: 1.5,
-                    child: Image.asset(
-                      'assets/images/car1.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(color: const Color(0xFF1F2937)),
-                    ),
+                    child: item.image.isEmpty
+                        ? Image.asset(
+                            'assets/images/car1.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(color: const Color(0xFF1F2937)),
+                          )
+                        : Image.network(
+                            item.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(color: const Color(0xFF1F2937)),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -360,21 +359,9 @@ class _CarCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                _DetailLine(label: 'Merk Mobil', value: item.brand),
-                _DetailLine(label: 'Nomor Polisi', value: item.plate),
-                _DetailLine(label: 'Spesifikasi', value: item.spec),
-                _DetailLine(label: 'Kapasitas penumpang', value: item.capacity),
-                _DetailLine(label: 'Jenis BBM', value: item.fuel),
+                _DetailLine(label: 'Kategori', value: item.kategori),
+                _DetailLine(label: 'Stok', value: '${item.stok}'),
                 const SizedBox(height: 4),
-                const Text(
-                  'Harga tidak termasuk BBM',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 8,
-                  ),
-                ),
                 Text(
                   item.price,
                   maxLines: 1,

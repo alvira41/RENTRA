@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../controllers/auth_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../../core/routes/app_routes.dart';
 import '../admin/edit_password_view.dart';
 import '../widgets/rentra_scaffold.dart';
@@ -14,24 +15,19 @@ class ProfileUserView extends StatefulWidget {
 }
 
 class _ProfileUserViewState extends State<ProfileUserView> {
-  final AuthController _auth = AuthController();
+  late final AuthController _auth;
   bool _siap = false;
   String? _ktp;
 
   @override
   void initState() {
     super.initState();
+    _auth = AppControllers.of(context).auth;
     _muat();
   }
 
-  @override
-  void dispose() {
-    _auth.dispose();
-    super.dispose();
-  }
-
   Future<void> _muat() async {
-    await _auth.restoreSession();
+    if (_auth.role == null) await _auth.restoreSession();
     if (_auth.role == 'user') {
       try {
         _ktp = await _auth.ktpUrl();

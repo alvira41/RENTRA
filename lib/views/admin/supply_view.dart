@@ -1,41 +1,69 @@
 import 'package:flutter/material.dart';
+import '../../controllers/supply_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../../core/routes/app_routes.dart';
 import '../widgets/add_options_dialog.dart';
 import '../widgets/admin_bottom_bar.dart';
 
 class _MitraItem {
   const _MitraItem({
+    required this.id,
     required this.name,
     required this.owner,
-    required this.online,
+    required this.phone,
+    required this.pending,
   });
 
+  final String id;
   final String name;
   final String owner;
-  final bool online;
+  final String phone;
+  final int pending;
 }
 
-const List<_MitraItem> _dummyMitra = [
-  _MitraItem(
-    name: 'Rental Mobil Malang',
-    owner: 'Pak Hendra',
-    online: false,
-  ),
-  _MitraItem(
-    name: 'Batu Car Rental',
-    owner: 'Bu Rina',
-    online: true,
-  ),
-  _MitraItem(
-    name: 'Arema Trans',
-    owner: 'Pak Dimas',
-    online: true,
-  ),
-];
-
-class SupplyView extends StatelessWidget {
+class SupplyView extends StatefulWidget {
   const SupplyView({super.key});
+
+  @override
+  State<SupplyView> createState() => _SupplyViewState();
+}
+
+class _SupplyViewState extends State<SupplyView> {
+  late final SupplyController _supply;
+
+  @override
+  void initState() {
+    super.initState();
+    _supply = AppControllers.of(context).supply;
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    await _supply.loadMitraList();
+    final ok = await _supply.loadSupplies();
+    if (!mounted) return;
+    setState(() {});
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_supply.errorMessage ?? 'Gagal memuat supply')),
+      );
+    }
+  }
+
+  List<_MitraItem> get _mitra => _supply.mitraList.map((row) {
+        final id = row['id_mitra']?.toString() ?? '';
+        return _MitraItem(
+          id: id,
+          name: row['nama_rental']?.toString() ?? '-',
+          owner: row['nama_pemilik']?.toString() ?? '-',
+          phone: row['no_telepon']?.toString() ?? '-',
+          pending: _supply.supplies
+              .where((s) =>
+                  s['id_mitra']?.toString() == id && s['status'] == 'pending')
+              .length,
+        );
+      }).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -87,9 +115,10 @@ class SupplyView extends StatelessWidget {
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: sidePadding),
-                  child: const _SummaryCard(
+                  child: _SummaryCard(
                     label: 'Status Supply',
-                    value: 'Rp 0.000.000',
+                    value:
+                        '${_supply.supplies.length} supply • ${_supply.supplies.where((s) => s['status'] == 'pending').length} menunggu',
                   ),
                 ),
                 Padding(
@@ -117,27 +146,41 @@ class SupplyView extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: ListView.separated(
-                    padding: EdgeInsets.fromLTRB(
-                      sidePadding,
-                      0,
-                      sidePadding,
-                      16,
-                    ),
-                    itemCount: _dummyMitra.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 10),
-                    itemBuilder: (context, index) {
-                      return _MitraRow(
-                        item: _dummyMitra[index],
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Detail mitra menyusul'),
-                            ),
-                          );
-                        },
-                      );
+                  child: ListenableBuilder(
+                    listenable: _supply,
+                    builder: (context, _) {
+                      final data = _mitra;
+                      return data.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'Belum ada mitra terdaftar',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: EdgeInsets.fromLTRB(
+                                sidePadding,
+                                0,
+                                sidePadding,
+                                16,
+                              ),
+                              itemCount: data.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, index) {
+                                final item = data[index];
+                                return _MitraRow(
+                                  item: item,
+                                  onTap: () => Navigator.of(context).pushNamed(
+                                    AppRoutes.adminMitraDetail,
+                                    arguments: item.id,
+                                  ),
+                                );
+                              },
+                            );
                     },
                   ),
                 ),
@@ -219,8 +262,9 @@ class _MitraRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color =
-        item.online ? const Color(0xFF4ADE80) : const Color(0xFFEF4444);
+    final color = item.pending > 0
+        ? const Color(0xFFFACC15)
+        : const Color(0xFF4ADE80);
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -250,7 +294,7 @@ class _MitraRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    item.owner,
+                    item.owner.isEmpty ? item.phone : item.owner,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -270,7 +314,7 @@ class _MitraRow extends StatelessWidget {
                 border: Border.all(color: color),
               ),
               child: Text(
-                item.online ? 'Online' : 'Offline',
+                '${item.pending} pending',
                 style: TextStyle(
                   color: color,
                   fontSize: 8,

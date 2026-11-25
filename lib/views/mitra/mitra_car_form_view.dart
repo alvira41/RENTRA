@@ -1,89 +1,139 @@
 import 'package:flutter/material.dart';
+import '../../controllers/base_controller.dart';
+import '../../controllers/katalog_controller.dart';
+import '../../core/controllers/app_controllers.dart';
+import '../../core/utils/image_picker_helper.dart';
 import '../widgets/mitra_mobil_card.dart';
 import '../widgets/mitra_page.dart';
 import '../widgets/rentra_scaffold.dart';
 
 class MitraCarFormView extends StatefulWidget {
+  const MitraCarFormView({super.key, this.isEdit = false, this.mobil});
+
   final bool isEdit;
   final MitraMobilData? mobil;
-  const MitraCarFormView({super.key, this.isEdit = false, this.mobil});
 
   @override
   State<MitraCarFormView> createState() => _MitraCarFormViewState();
 }
 
 class _MitraCarFormViewState extends State<MitraCarFormView> {
+  late final KatalogController _katalog;
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _merk;
   late final TextEditingController _nama;
-  late final TextEditingController _nopol;
-  late final TextEditingController _kapasitas;
-  late final TextEditingController _bbm;
-  late final TextEditingController _harga;
-  late final TextEditingController _deskripsi;
-  late String _transmisi;
+  late final TextEditingController _stok;
+  String? _idKategori;
+  UploadFile? _foto;
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
-    final m = widget.mobil;
-    _merk = TextEditingController(text: m?.merk ?? '');
-    _nama = TextEditingController(text: m?.nama ?? '');
-    _nopol = TextEditingController(text: m?.nopol ?? '');
-    _kapasitas =
-        TextEditingController(text: m?.kapasitas.replaceAll(' orang', '') ?? '');
-    _bbm = TextEditingController(text: m?.bbm ?? '');
-    _harga = TextEditingController(text: m == null ? '' : '${m.harga}');
-    _deskripsi = TextEditingController(text: m?.deskripsi ?? '');
-    _transmisi = m?.spesifikasi == 'Manual' ? 'Manual' : 'Matic';
+    _katalog = AppControllers.of(context).katalog;
+    _nama = TextEditingController(text: widget.mobil?.nama ?? '');
+    _stok = TextEditingController(
+        text: widget.mobil == null ? '' : '${widget.mobil!.stok}');
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    await _katalog.loadCategories();
+    if (!mounted) return;
+    setState(() {});
   }
 
   @override
   void dispose() {
-    for (final c in [_merk, _nama, _nopol, _kapasitas, _bbm, _harga, _deskripsi]) {
-      c.dispose();
-    }
+    _nama.dispose();
+    _stok.dispose();
     super.dispose();
   }
 
-  void _simpan() {
+  Future<void> _pilihFoto() async {
+    final file = await pickUploadFile();
+    if (file == null) return;
+    setState(() => _foto = file);
+  }
+
+  int? get _kategoriTerpilih =>
+      int.tryParse(_idKategori ?? '') ?? _kategoriDariNama(widget.mobil?.merk);
+
+  int? _kategoriDariNama(String? nama) {
+    if (nama == null || nama.isEmpty || nama == '-') return null;
+    for (final row in _katalog.categories) {
+      if (row['name']?.toString() == nama) {
+        return (row['id_category'] as num?)?.toInt();
+      }
+    }
+    return null;
+  }
+
+  Future<void> _simpan() async {
     if (!_formKey.currentState!.validate()) return;
-    final hasil = MitraMobilData(
-      nama: _nama.text.trim(),
-      merk: _merk.text.trim(),
-      nopol: _nopol.text.trim(),
-      spesifikasi: _transmisi,
-      kapasitas: '${_kapasitas.text.trim()} orang',
-      bbm: _bbm.text.trim(),
-      harga: int.tryParse(_harga.text.trim()) ?? 0,
-      status: widget.mobil?.status ?? 'Tersedia',
-      deskripsi: _deskripsi.text.trim(),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(widget.isEdit
-            ? 'Data mobil diperbarui'
-            : 'Mobil berhasil ditambahkan')));
-    Navigator.pop(context, hasil);
+    final stok = int.tryParse(_stok.text.trim());
+    final kategori = _kategoriTerpilih;
+    if (stok == null || stok < 0) {
+      _pesan('Stok harus berupa angka dan tidak negatif');
+      return;
+    }
+    if (kategori == null) {
+      _pesan('Pilih kategori mobil dulu');
+      return;
+    }
+
+    setState(() => _loading = true);
+    final bool ok;
+    if (widget.isEdit && widget.mobil != null && widget.mobil!.id > 0) {
+      ok = await _katalog.updateKatalogMitra(
+        widget.mobil!.id,
+        namaMobilMitra: _nama.text.trim(),
+        totalStockMitra: stok,
+        idCategoryMitra: kategori,
+        fotoBaru: _foto,
+      );
+    } else {
+      ok = await _katalog.addKatalogMitra(
+        namaMobilMitra: _nama.text.trim(),
+        totalStockMitra: stok,
+        idCategoryMitra: kategori,
+        foto: _foto,
+      );
+    }
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (!ok) {
+      _pesan(_katalog.errorMessage ?? 'Data mobil gagal disimpan');
+      return;
+    }
+    _pesan(widget.isEdit
+        ? 'Data mobil diperbarui'
+        : 'Mobil berhasil ditambahkan');
+    Navigator.pop(context, true);
+  }
+
+  void _pesan(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   Widget _label(String t) => Padding(
         padding: const EdgeInsets.only(top: 10, bottom: 4),
         child: Text(t,
             style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w700)),
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            )),
       );
 
   Widget _field(String hint, TextEditingController c,
-      {TextInputType? type, int lines = 1, bool wajib = true}) {
+      {TextInputType? type}) {
     return TextFormField(
       controller: c,
       keyboardType: type,
-      maxLines: lines,
       style: const TextStyle(color: Colors.white, fontSize: 11),
       validator: (v) =>
-          wajib && (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
+          v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.white54, fontSize: 11),
@@ -105,25 +155,6 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
     );
   }
 
-  Widget _radio(String v) => GestureDetector(
-        onTap: () => setState(() => _transmisi = v),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-                _transmisi == v
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
-                color: Colors.white,
-                size: 14),
-            const SizedBox(width: 4),
-            Text(v,
-                style: const TextStyle(color: Colors.white, fontSize: 11)),
-            const SizedBox(width: 14),
-          ],
-        ),
-      );
-
   @override
   Widget build(BuildContext context) {
     return MitraPage(
@@ -142,52 +173,83 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
                       _label('Unggah Foto Mobil'),
                       Center(
                         child: GestureDetector(
-                          onTap: () => ScaffoldMessenger.of(context)
-                              .showSnackBar(const SnackBar(
-                                  content:
-                                      Text('Pilih foto belum dihubungkan'))),
+                          onTap: _pilihFoto,
                           child: Container(
-                            width: 70,
-                            height: 56,
+                            width: 90,
+                            height: 60,
+                            padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
                                   color: Colors.white.withOpacity(0.3)),
                             ),
-                            child: const Icon(Icons.add_photo_alternate_outlined,
-                                color: Colors.white, size: 24),
+                            child: _foto == null
+                                ? const Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    color: Colors.white,
+                                    size: 24)
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.check_circle_outline,
+                                          color: Color(0xFF4ADE80), size: 20),
+                                      Text(
+                                        _foto!.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 8,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                           ),
                         ),
                       ),
-                      _label('Informasi Umum'),
-                      _field('Merk Mobil', _merk),
-                      const SizedBox(height: 6),
+                      _label('Informasi Mobil'),
                       _field('Nama Mobil', _nama),
                       const SizedBox(height: 6),
-                      _field('Nomor Polisi', _nopol),
-                      _label('Spesifikasi'),
-                      Row(children: [
-                        const Text('Tipe Transmisi  ',
-                            style:
-                                TextStyle(color: Colors.white, fontSize: 11)),
-                        _radio('Matic'),
-                        _radio('Manual'),
-                      ]),
-                      const SizedBox(height: 6),
-                      Row(children: [
-                        Expanded(
-                            child: _field('Kapasitas Penumpang', _kapasitas,
-                                type: TextInputType.number)),
-                        const SizedBox(width: 8),
-                        Expanded(child: _field('Jenis Bahan Bakar', _bbm)),
-                      ]),
-                      _label('Harga'),
-                      _field('Harga Sewa / Hari', _harga,
+                      _field('Total Stok', _stok,
                           type: TextInputType.number),
-                      _label('Deskripsi'),
-                      _field('Deskripsi Tambahan', _deskripsi,
-                          lines: 4, wajib: false),
+                      _label('Kategori'),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(4),
+                          border:
+                              Border.all(color: Colors.white.withOpacity(0.3)),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _kategoriTerpilih?.toString(),
+                            isExpanded: true,
+                            dropdownColor: const Color(0xFF111B2E),
+                            hint: const Text('Pilih kategori',
+                                style: TextStyle(
+                                    color: Colors.white54, fontSize: 11)),
+                            items: [
+                              for (final row in _katalog.categories)
+                                DropdownMenuItem<String>(
+                                  value: (row['id_category'] as num)
+                                      .toInt()
+                                      .toString(),
+                                  child: Text(
+                                    row['name']?.toString() ?? '-',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                            onChanged: (v) =>
+                                setState(() => _idKategori = v),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -198,10 +260,14 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 SmallButton(
-                    label: 'Cancel',
-                    color: const Color(0xFFEF4444),
-                    onTap: () => Navigator.pop(context)),
-                SmallButton(label: 'Save', onTap: _simpan),
+                  label: 'Cancel',
+                  color: const Color(0xFFEF4444),
+                  onTap: () => Navigator.pop(context),
+                ),
+                SmallButton(
+                  label: _loading ? 'Menyimpan...' : 'Save',
+                  onTap: _loading ? null : _simpan,
+                ),
               ],
             ),
           ],

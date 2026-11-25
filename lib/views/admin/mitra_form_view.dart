@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../controllers/auth_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
 
 class MitraFormView extends StatefulWidget {
   const MitraFormView({super.key});
@@ -10,6 +12,7 @@ class MitraFormView extends StatefulWidget {
 }
 
 class _MitraFormViewState extends State<MitraFormView> {
+  late final AuthController _auth;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ownerController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
@@ -20,6 +23,13 @@ class _MitraFormViewState extends State<MitraFormView> {
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth = AppControllers.of(context).auth;
+  }
 
   @override
   void dispose() {
@@ -39,7 +49,7 @@ class _MitraFormViewState extends State<MitraFormView> {
     );
   }
 
-  void _onSave() {
+  Future<void> _onSave() async {
     FocusScope.of(context).unfocus();
 
     final email = _emailController.text.trim();
@@ -65,6 +75,22 @@ class _MitraFormViewState extends State<MitraFormView> {
       return;
     }
 
+    setState(() => _loading = true);
+    final ok = await _auth.registerMitra(
+      email: email,
+      password: _passwordController.text,
+      namaRental: _nameController.text.trim(),
+      namaPemilik: _ownerController.text.trim(),
+      alamat: _addressController.text.trim(),
+      noTelepon: _phoneController.text.trim(),
+    );
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (!ok) {
+      _showMessage(_auth.errorMessage ?? 'Mitra gagal ditambahkan');
+      return;
+    }
     _showMessage('Mitra berhasil ditambahkan');
     Navigator.of(context).pop();
   }
@@ -185,11 +211,11 @@ class _MitraFormViewState extends State<MitraFormView> {
                         onTap: () => Navigator.of(context).pop(),
                       ),
                       _PillButton(
-                        label: 'Save',
+                        label: _loading ? 'Menyimpan...' : 'Save',
                         fill: const Color(0x333B82F6),
                         border: const Color(0xFF3B82F6),
                         textColor: const Color(0xFF60A5FA),
-                        onTap: _onSave,
+                        onTap: _loading ? null : _onSave,
                       ),
                     ],
                   ),
@@ -303,7 +329,7 @@ class _PillButton extends StatelessWidget {
   final Color fill;
   final Color border;
   final Color textColor;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../controllers/auth_controller.dart';
+import '../../controllers/base_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../../core/routes/app_routes.dart';
+import '../../core/utils/image_picker_helper.dart';
 import '../widgets/rentra_scaffold.dart';
 
 class RegisterView extends StatefulWidget {
@@ -12,7 +15,7 @@ class RegisterView extends StatefulWidget {
 }
 
 class _RegisterViewState extends State<RegisterView> {
-  final AuthController _auth = AuthController();
+  late final AuthController _auth;
   final _formKey = GlobalKey<FormState>();
   final _nama = TextEditingController();
   final _tanggalLahir = TextEditingController();
@@ -27,10 +30,16 @@ class _RegisterViewState extends State<RegisterView> {
   bool _hidePassword = true;
   bool _hideVerifikasi = true;
   bool _loading = false;
+  UploadFile? _ktpFile;
+
+  @override
+  void initState() {
+    super.initState();
+    _auth = AppControllers.of(context).auth;
+  }
 
   @override
   void dispose() {
-    _auth.dispose();
     for (final c in [
       _nama,
       _tanggalLahir,
@@ -63,6 +72,12 @@ class _RegisterViewState extends State<RegisterView> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(teks)));
   }
 
+  Future<void> _pilihKtp() async {
+    final file = await pickUploadFile();
+    if (file == null) return;
+    setState(() => _ktpFile = file);
+  }
+
   Future<void> _daftar() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
@@ -84,6 +99,12 @@ class _RegisterViewState extends State<RegisterView> {
     if (!ok) {
       _pesan(_auth.errorMessage ?? 'Pendaftaran gagal');
       return;
+    }
+
+    if (_ktpFile != null && _auth.isLoggedIn) {
+      final terunggah = await _auth.uploadKtp(_ktpFile!);
+      if (!mounted) return;
+      if (!terunggah) _pesan(_auth.errorMessage ?? 'Foto KTP gagal diunggah');
     }
 
     if (_auth.isLoggedIn) {
@@ -280,7 +301,7 @@ class _RegisterViewState extends State<RegisterView> {
                   ),
                   const SizedBox(height: 6),
                   GestureDetector(
-                    onTap: () => _pesan('Unggah foto belum dihubungkan'),
+                    onTap: _pilihKtp,
                     child: Container(
                       width: double.infinity,
                       height: 110,
@@ -289,14 +310,14 @@ class _RegisterViewState extends State<RegisterView> {
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: const Color(0x80FFFFFF)),
                       ),
-                      child: const Column(
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.add_a_photo_outlined,
+                          const Icon(Icons.add_a_photo_outlined,
                               color: AppColors.textPrimary, size: 34),
                           SizedBox(height: 6),
                           Text(
-                            'Klik untuk unggah foto',
+                            _ktpFile?.name ?? 'Klik untuk unggah foto',
                             style: TextStyle(
                               color: AppColors.textPrimary,
                               fontSize: 9,

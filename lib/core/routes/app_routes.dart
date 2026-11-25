@@ -15,6 +15,7 @@ class AppRoutes {
   static const String adminReturn = '/admin/pengembalian';
   static const String adminSupply = '/admin/supply';
   static const String adminAddMitra = '/admin/tambah-mitra';
+  static const String adminMitraDetail = '/admin/detail-mitra';
   static const String adminActivity = '/admin/aktivitas';
   static const String adminProfile = '/admin/profile';
   static const String adminEditPassword = '/admin/edit-password';

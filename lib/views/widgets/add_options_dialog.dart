@@ -25,8 +25,10 @@ Future<void> showAddOptionsDialog(BuildContext context) async {
   }
 
   if (result.dendaAmount != null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Nominal denda diatur: Rp${result.dendaAmount}')),
+    final denda = int.tryParse(result.dendaAmount!);
+    Navigator.of(context).pushNamed(
+      AppRoutes.adminReturn,
+      arguments: denda == null ? null : {'dendaPerHari': denda},
     );
   }
 }

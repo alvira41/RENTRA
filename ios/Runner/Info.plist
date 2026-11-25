@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Gunakan kamera untuk mengunggah foto KTP, mobil, dan bukti pembayaran.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Gunakan galeri untuk mengunggah foto KTP, mobil, dan bukti pembayaran.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

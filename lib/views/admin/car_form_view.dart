@@ -1,66 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../controllers/base_controller.dart';
+import '../../controllers/katalog_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
+import '../../core/utils/image_picker_helper.dart';
 import '../widgets/add_options_dialog.dart';
 import '../widgets/admin_bottom_bar.dart';
 
 class CarFormView extends StatefulWidget {
-  const CarFormView({super.key, this.isEdit = false});
+  const CarFormView({super.key, this.isEdit = false, this.idMobil});
 
   final bool isEdit;
+  final int? idMobil;
 
   @override
   State<CarFormView> createState() => _CarFormViewState();
 }
 
 class _CarFormViewState extends State<CarFormView> {
-  static const List<String> _capacities = [
-    '2 orang',
-    '4 orang',
-    '5 orang',
-    '7 orang',
-  ];
-  static const List<String> _fuels = [
-    'Pertamax',
-    'Pertalite',
-    'Solar',
-    'Dexlite',
-  ];
-
-  late final TextEditingController _brandController;
-  late final TextEditingController _plateController;
+  late final KatalogController _katalog;
+  late final TextEditingController _namaController;
+  late final TextEditingController _stokController;
   late final TextEditingController _priceController;
-  late final TextEditingController _descController;
 
-  String _transmission = 'Matic';
-  String? _capacity;
-  String? _fuel;
+  String? _idKategori;
+  UploadFile? _foto;
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
-    _brandController = TextEditingController(
-      text: widget.isEdit ? 'Porsche' : '',
-    );
-    _plateController = TextEditingController(
-      text: widget.isEdit ? 'N V174 OCT' : '',
-    );
-    _priceController = TextEditingController(
-      text: widget.isEdit ? '500000' : '',
-    );
-    _descController = TextEditingController();
-    if (widget.isEdit) {
-      _capacity = '2 orang';
-      _fuel = 'Pertamax';
+    _katalog = AppControllers.of(context).katalog;
+    _namaController = TextEditingController();
+    _stokController = TextEditingController(text: '1');
+    _priceController = TextEditingController();
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    await _katalog.loadCategories();
+    if (widget.isEdit && widget.idMobil != null) {
+      final mobil = await _katalog.getKatalogById(widget.idMobil!);
+      if (mobil == null || !mounted) return;
+      _namaController.text = mobil['nama_mobil']?.toString() ?? '';
+      _priceController.text = (mobil['price'] as num?)?.toString() ?? '';
+      _stokController.text = (mobil['total_stock'] as num?)?.toString() ?? '1';
+      _idKategori = (mobil['id_category'] as num?)?.toInt().toString();
     }
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _brandController.dispose();
-    _plateController.dispose();
+    _namaController.dispose();
+    _stokController.dispose();
     _priceController.dispose();
-    _descController.dispose();
     super.dispose();
   }
 
@@ -70,22 +65,60 @@ class _CarFormViewState extends State<CarFormView> {
     );
   }
 
-  void _onSave() {
+  Future<void> _onSave() async {
     FocusScope.of(context).unfocus();
 
-    if (_brandController.text.trim().isEmpty ||
-        _plateController.text.trim().isEmpty ||
-        _priceController.text.trim().isEmpty ||
-        _capacity == null ||
-        _fuel == null) {
+    final nama = _namaController.text.trim();
+    final harga = num.tryParse(_priceController.text.trim());
+    final stok = int.tryParse(_stokController.text.trim());
+    final kategori = int.tryParse(_idKategori ?? '');
+
+    if (nama.isEmpty || harga == null || harga <= 0 || stok == null || stok < 0) {
       _showMessage('Lengkapi data mobil terlebih dahulu');
       return;
     }
+    if (kategori == null) {
+      _showMessage('Pilih kategori mobil terlebih dahulu');
+      return;
+    }
 
+    setState(() => _loading = true);
+    final bool ok;
+    if (widget.isEdit && widget.idMobil != null) {
+      ok = await _katalog.updateKatalog(
+        widget.idMobil!,
+        idCategory: kategori,
+        namaMobil: nama,
+        price: harga,
+        totalStock: stok,
+        fotoBaru: _foto,
+      );
+    } else {
+      ok = await _katalog.addKatalog(
+        idCategory: kategori,
+        namaMobil: nama,
+        price: harga,
+        totalStock: stok,
+        foto: _foto,
+      );
+    }
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (!ok) {
+      _showMessage(_katalog.errorMessage ?? 'Data mobil gagal disimpan');
+      return;
+    }
     _showMessage(
       widget.isEdit ? 'Data mobil diperbarui' : 'Mobil berhasil ditambahkan',
     );
     Navigator.of(context).pop();
+  }
+
+  Future<void> _pilihFoto() async {
+    final file = await pickUploadFile();
+    if (file == null) return;
+    setState(() => _foto = file);
   }
 
   @override
@@ -132,7 +165,7 @@ class _CarFormViewState extends State<CarFormView> {
                   const _SectionTitle('Unggah Foto Mobil'),
                   const SizedBox(height: 6),
                   GestureDetector(
-                    onTap: () => _showMessage('Fitur unggah foto menyusul'),
+                    onTap: _pilihFoto,
                     child: Container(
                       width: uploadWidth,
                       height: uploadWidth * 0.7,
@@ -141,19 +174,19 @@ class _CarFormViewState extends State<CarFormView> {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: const Color(0x66FFFFFF)),
                       ),
-                      child: const Column(
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.add_photo_alternate_outlined,
                             size: 28,
                             color: AppColors.textPrimary,
                           ),
-                          SizedBox(height: 6),
+                          const SizedBox(height: 6),
                           Text(
-                            'Klik untuk\nunggah foto',
+                            _foto?.name ?? 'Klik untuk\nunggah foto',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppColors.textPrimary,
                               fontSize: 8,
                             ),
@@ -163,94 +196,58 @@ class _CarFormViewState extends State<CarFormView> {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  const _SectionTitle('Informasi Utama'),
+                  const _SectionTitle('Informasi Mobil'),
+                  const SizedBox(height: 8),
+                  _LabeledField(
+                    label: 'Nama Mobil',
+                    child: _FormInput(controller: _namaController),
+                  ),
+                  const SizedBox(height: 12),
+                  _LabeledField(
+                    label: 'Kategori',
+                    child: _DropdownBox(
+                      value: _idKategori,
+                      items: [
+                        for (final k in _katalog.categories)
+                          (k['id_category'] as num).toInt().toString(),
+                      ],
+                      labels: {
+                        for (final k in _katalog.categories)
+                          (k['id_category'] as num).toInt().toString():
+                              k['name']?.toString() ?? '-',
+                      },
+                      onChanged: (v) => setState(() => _idKategori = v),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  const _SectionTitle('Harga dan Stok'),
                   const SizedBox(height: 8),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: _LabeledField(
-                          label: 'Merk Mobil',
-                          child: _FormInput(controller: _brandController),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _LabeledField(
-                          label: 'Nomor Polisi',
-                          child: _FormInput(controller: _plateController),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  const _SectionTitle('Spesifikasi'),
-                  const SizedBox(height: 8),
-                  const _FieldLabel('Tipe Transmisi'),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      _RadioOption(
-                        label: 'Matic',
-                        selected: _transmission == 'Matic',
-                        onTap: () => setState(() => _transmission = 'Matic'),
-                      ),
-                      const SizedBox(width: 16),
-                      _RadioOption(
-                        label: 'Manual',
-                        selected: _transmission == 'Manual',
-                        onTap: () => setState(() => _transmission = 'Manual'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _LabeledField(
-                          label: 'Kapasitas Penumpang',
-                          child: _DropdownBox(
-                            value: _capacity,
-                            items: _capacities,
-                            onChanged: (v) => setState(() => _capacity = v),
+                          label: 'Harga Sewa / Hari',
+                          child: _FormInput(
+                            controller: _priceController,
+                            keyboardType: TextInputType.number,
+                            formatters: [FilteringTextInputFormatter.digitsOnly],
+                            prefixText: 'Rp ',
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: _LabeledField(
-                          label: 'Jenis Bahan Bakar',
-                          child: _DropdownBox(
-                            value: _fuel,
-                            items: _fuels,
-                            onChanged: (v) => setState(() => _fuel = v),
+                          label: 'Total Stok',
+                          child: _FormInput(
+                            controller: _stokController,
+                            keyboardType: TextInputType.number,
+                            formatters: [FilteringTextInputFormatter.digitsOnly],
                           ),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 18),
-                  const _SectionTitle('Harga'),
-                  const SizedBox(height: 8),
-                  _LabeledField(
-                    label: 'Harga Sewa / Hari',
-                    child: _FormInput(
-                      controller: _priceController,
-                      keyboardType: TextInputType.number,
-                      formatters: [FilteringTextInputFormatter.digitsOnly],
-                      prefixText: 'Rp ',
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const _SectionTitle('Deskripsi'),
-                  const SizedBox(height: 8),
-                  _LabeledField(
-                    label: 'Deskripsi Tambahan:',
-                    child: _FormInput(
-                      controller: _descController,
-                      maxLines: 5,
-                    ),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -264,11 +261,11 @@ class _CarFormViewState extends State<CarFormView> {
                         onTap: () => Navigator.of(context).pop(),
                       ),
                       _PillButton(
-                        label: 'Save',
+                        label: _loading ? 'Menyimpan...' : 'Save',
                         fill: const Color(0x333B82F6),
                         border: const Color(0xFF3B82F6),
                         textColor: const Color(0xFF60A5FA),
-                        onTap: _onSave,
+                        onTap: _loading ? null : _onSave,
                       ),
                     ],
                   ),
@@ -341,14 +338,12 @@ class _FormInput extends StatelessWidget {
     required this.controller,
     this.keyboardType,
     this.formatters,
-    this.maxLines = 1,
     this.prefixText,
   });
 
   final TextEditingController controller;
   final TextInputType? keyboardType;
   final List<TextInputFormatter>? formatters;
-  final int maxLines;
   final String? prefixText;
 
   @override
@@ -360,10 +355,9 @@ class _FormInput extends StatelessWidget {
 
     return TextField(
       controller: controller,
-      keyboardType: maxLines > 1 ? TextInputType.multiline : keyboardType,
+      keyboardType: keyboardType,
       inputFormatters: formatters,
-      minLines: maxLines,
-      maxLines: maxLines,
+      maxLines: 1,
       style: const TextStyle(
         color: AppColors.buttonText,
         fontSize: 12,
@@ -396,10 +390,12 @@ class _DropdownBox extends StatelessWidget {
     required this.value,
     required this.items,
     required this.onChanged,
+    this.labels,
   });
 
   final String? value;
   final List<String> items;
+  final Map<String, String>? labels;
   final ValueChanged<String?> onChanged;
 
   @override
@@ -430,52 +426,12 @@ class _DropdownBox extends StatelessWidget {
               .map(
                 (item) => DropdownMenuItem<String>(
                   value: item,
-                  child: Text(item),
+                  child: Text(labels?[item] ?? item),
                 ),
               )
               .toList(),
           onChanged: onChanged,
         ),
-      ),
-    );
-  }
-}
-
-class _RadioOption extends StatelessWidget {
-  const _RadioOption({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            selected
-                ? Icons.radio_button_checked_rounded
-                : Icons.radio_button_unchecked_rounded,
-            size: 16,
-            color: AppColors.textPrimary,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 10,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -494,7 +450,7 @@ class _PillButton extends StatelessWidget {
   final Color fill;
   final Color border;
   final Color textColor;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

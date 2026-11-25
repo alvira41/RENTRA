@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../controllers/katalog_controller.dart';
+import '../../controllers/supply_controller.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../widgets/mitra_mobil_card.dart';
 import '../widgets/mitra_page.dart';
 import 'mitra_car_form_view.dart';
@@ -11,100 +14,174 @@ class DashboardMitraView extends StatefulWidget {
 }
 
 class _DashboardMitraViewState extends State<DashboardMitraView> {
-  final List<MitraMobilData> _mobil = [
-    MitraMobilData(
-        nama: 'PORSCHE 911 GT3 RS',
-        merk: 'Porsche',
-        nopol: 'N 1774 DCT',
-        spesifikasi: 'Matic',
-        kapasitas: '2 orang',
-        bbm: 'Pertamax',
-        harga: 500000,
-        status: 'Disewa'),
-    MitraMobilData(
-        nama: 'PORSCHE 911 GT3 RS',
-        merk: 'Porsche',
-        nopol: 'N 1774 DCT',
-        spesifikasi: 'Matic',
-        kapasitas: '2 orang',
-        bbm: 'Pertamax',
-        harga: 500000,
-        status: 'Tersedia'),
-    MitraMobilData(
-        nama: 'PORSCHE 911 GT3 RS',
-        merk: 'Porsche',
-        nopol: 'N 1774 DCT',
-        spesifikasi: 'Matic',
-        kapasitas: '2 orang',
-        bbm: 'Pertamax',
-        harga: 500000,
-        status: 'Tersedia'),
-  ];
+  late final KatalogController _katalog;
+  late final SupplyController _supply;
+  late final String? _idMitra;
+  bool _loading = true;
 
-  Future<void> _edit(int i) async {
-    final hasil = await Navigator.push<MitraMobilData>(
-      context,
-      MaterialPageRoute(
-          builder: (_) => MitraCarFormView(isEdit: true, mobil: _mobil[i])),
-    );
-    if (hasil != null && mounted) {
-      setState(() => _mobil[i] = hasil);
-    }
+  @override
+  void initState() {
+    super.initState();
+    final controllers = AppControllers.of(context);
+    _katalog = controllers.katalog;
+    _supply = controllers.supply;
+    _idMitra = controllers.auth.uid;
+    _muat();
   }
 
-  Future<void> _hapus(int i) async {
+  Future<void> _muat() async {
+    await Future.wait([
+      _katalog.loadKatalogMitra(),
+      _supply.loadSupplies(idMitra: _idMitra),
+    ]);
+    if (!mounted) return;
+    setState(() => _loading = false);
+  }
+
+  List<MitraMobilData> get _mobil => _katalog.katalogMitra
+      .map((row) => MitraMobilData.fromKatalogMitra(row))
+      .toList();
+
+  Future<void> _tambah() async {
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const MitraCarFormView()),
+    );
+    if (ok == true) _muat();
+  }
+
+  Future<void> _edit(MitraMobilData mobil) async {
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MitraCarFormView(isEdit: true, mobil: mobil),
+      ),
+    );
+    if (ok == true) _muat();
+  }
+
+  Future<void> _hapus(MitraMobilData mobil) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Hapus Mobil'),
-        content: Text('Hapus ${_mobil[i].nama}?'),
+        content: Text('Hapus ${mobil.nama}?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Batal')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Hapus')),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus'),
+          ),
         ],
       ),
     );
     if (ok != true || !mounted) return;
-    setState(() => _mobil.removeAt(i));
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Mobil dihapus')));
+    final sukses = await _katalog.deleteKatalogMitra(mobil.id);
+    if (!mounted) return;
+    _pesan(sukses
+        ? 'Mobil dihapus'
+        : _katalog.errorMessage ?? 'Mobil gagal dihapus');
+  }
+
+  void _pesan(String text) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   @override
   Widget build(BuildContext context) {
+    final pending = _supply.supplies
+        .where((s) => s['status'] == 'pending')
+        .length;
+
     return MitraPage(
       title: 'DASHBOARD MITRA',
       navIndex: 0,
-      child: _mobil.isEmpty
-          ? const Center(
-              child: Text('Belum ada mobil',
-                  style: TextStyle(color: Colors.white70, fontSize: 11)))
-          : ListView.separated(
-              itemCount: _mobil.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, i) => MitraMobilCard(
-                data: _mobil[i],
-                actions: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    SmallButton(
-                        label: 'Edit',
-                        icon: Icons.edit,
-                        onTap: () => _edit(i)),
-                    const SizedBox(width: 6),
-                    SmallButton(
-                        label: 'Hapus',
-                        icon: Icons.delete_outline,
-                        color: const Color(0xFFEF4444),
-                        onTap: () => _hapus(i)),
-                  ],
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0x26FFFFFF),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0x40FFFFFF)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.local_shipping_outlined,
+                    color: Colors.white70, size: 18),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '$pending supply menunggu konfirmasi',
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                  ),
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _tambah,
+              icon: const Icon(Icons.add, size: 14),
+              label: const Text('Tambah Mobil'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                textStyle: const TextStyle(fontSize: 11),
               ),
             ),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: ListenableBuilder(
+              listenable: _katalog,
+              builder: (context, _) {
+                final mobil = _mobil;
+                if (_loading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (mobil.isEmpty) {
+                  return const Center(
+                    child: Text('Belum ada mobil',
+                        style:
+                            TextStyle(color: Colors.white70, fontSize: 11)),
+                  );
+                }
+                return ListView.separated(
+                  itemCount: mobil.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (_, i) => MitraMobilCard(
+                    data: mobil[i],
+                    actions: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        SmallButton(
+                          label: 'Edit',
+                          icon: Icons.edit,
+                          onTap: () => _edit(mobil[i]),
+                        ),
+                        const SizedBox(width: 6),
+                        SmallButton(
+                          label: 'Hapus',
+                          icon: Icons.delete_outline,
+                          color: const Color(0xFFEF4444),
+                          onTap: () => _hapus(mobil[i]),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

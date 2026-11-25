@@ -1,68 +1,109 @@
 import 'package:flutter/material.dart';
+import '../../controllers/order_controller.dart';
 import '../../core/constants/app_colors.dart';
-import '../widgets/mitra_mobil_card.dart';
+import '../../core/controllers/app_controllers.dart';
+import '../../core/utils/formatter.dart';
 import '../widgets/user_page.dart';
 import 'checkout_view.dart';
 
 class _Riwayat {
   const _Riwayat({
+    required this.idOrder,
     required this.kode,
     required this.status,
     required this.nama,
+    required this.image,
     required this.mulai,
     required this.selesai,
-    required this.harga,
+    required this.totalPrice,
+    required this.detailCount,
     this.denda = 0,
   });
 
+  final int idOrder;
   final String kode;
   final String status;
   final String nama;
+  final String image;
   final DateTime mulai;
   final DateTime selesai;
-  final int harga;
-  final int denda;
+  final num totalPrice;
+  final int detailCount;
+  final num denda;
 
   int get hari {
     final d = selesai.difference(mulai).inDays;
     return d < 1 ? 1 : d;
   }
 
-  int get total => harga * hari + denda;
+  num get total => totalPrice + denda;
 }
 
-String _rp(int v) => rupiah(v).replaceFirst('Rp.', 'Rp ');
-
-class RiwayatView extends StatelessWidget {
+class RiwayatView extends StatefulWidget {
   const RiwayatView({super.key});
 
-  static final List<_Riwayat> _data = [
-    _Riwayat(
-      kode: '#0001791',
-      status: 'Completed',
-      nama: 'PORSCHE 911 GT3 RS',
-      mulai: DateTime(2026, 9, 25),
-      selesai: DateTime(2026, 9, 28),
-      harga: 500000,
-    ),
-    _Riwayat(
-      kode: '#0001754',
-      status: 'Completed',
-      nama: 'PORSCHE 911 GT3 RS',
-      mulai: DateTime(2026, 9, 10),
-      selesai: DateTime(2026, 9, 12),
-      harga: 500000,
-      denda: 100000,
-    ),
-    _Riwayat(
-      kode: '#0001702',
-      status: 'Reject',
-      nama: 'PORSCHE 911 GT3 RS',
-      mulai: DateTime(2026, 9, 2),
-      selesai: DateTime(2026, 9, 5),
-      harga: 500000,
-    ),
-  ];
+  @override
+  State<RiwayatView> createState() => _RiwayatViewState();
+}
+
+class _RiwayatViewState extends State<RiwayatView> {
+  late final OrderController _order;
+
+  List<_Riwayat> get _data => _order.orders
+      .map(_dariBaris)
+      .where(
+        (item) => ['completed', 'cancelled', 'rejected'].contains(item.status),
+      )
+      .toList();
+
+  @override
+  void initState() {
+    super.initState();
+    _order = AppControllers.of(context).order;
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    final ok = await _order.loadMyOrders();
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_order.errorMessage ?? 'Gagal memuat riwayat')),
+      );
+    }
+  }
+
+  _Riwayat _dariBaris(Map<String, dynamic> row) {
+    final details = List<Map<String, dynamic>>.from(
+      (row['order_details'] as List?) ?? const [],
+    );
+    final detail = details.isEmpty ? <String, dynamic>{} : details.first;
+    final katalog = (detail['katalog'] as Map?)?.cast<String, dynamic>();
+
+    num denda = 0;
+    for (final d in details) {
+      final dendaRows = List<Map<String, dynamic>>.from(
+        (d['denda'] as List?) ?? const [],
+      );
+      for (final itemDenda in dendaRows) {
+        denda += (itemDenda['total_denda'] as num?) ?? 0;
+      }
+    }
+
+    return _Riwayat(
+      idOrder: (row['id_order'] as num?)?.toInt() ?? 0,
+      kode: row['transaction_code']?.toString() ?? '-',
+      status: row['status']?.toString() ?? '-',
+      nama: katalog?['nama_mobil']?.toString() ?? '-',
+      image: katalog?['image']?.toString() ?? '',
+      mulai: DateTime.tryParse(detail['tanggal_pinjam']?.toString() ?? '') ??
+          DateTime.now(),
+      selesai: DateTime.tryParse(detail['tanggal_kembali']?.toString() ?? '') ??
+          DateTime.now(),
+      totalPrice: (row['total_price'] as num?) ?? 0,
+      detailCount: details.length,
+      denda: denda,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,19 +111,29 @@ class RiwayatView extends StatelessWidget {
       title: 'RIWAYAT',
       navIndex: 2,
       centerTitle: false,
-      child: _data.isEmpty
-          ? const Center(
-              child: Text(
-                'Belum ada riwayat sewa',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-              ),
-            )
-          : ListView.separated(
-              itemCount: _data.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) =>
-                  _RiwayatCard(data: _data[index]),
-            ),
+      child: ListenableBuilder(
+        listenable: _order,
+        builder: (context, _) {
+          final data = _data;
+          if (_order.isLoading && data.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return data.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Belum ada riwayat sewa',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  ),
+                )
+              : ListView.separated(
+                  itemCount: data.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                  itemBuilder: (context, index) =>
+                      _RiwayatCard(data: data[index]),
+                );
+        },
+      ),
     );
   }
 }
@@ -92,8 +143,9 @@ class _RiwayatCard extends StatelessWidget {
 
   final _Riwayat data;
 
-  Color get _warna =>
-      data.status == 'Completed' ? const Color(0xFF4ADE80) : const Color(0xFFEF4444);
+  Color get _warna => data.status == 'completed'
+      ? const Color(0xFF4ADE80)
+      : const Color(0xFFEF4444);
 
   Widget _barisHarga(String label, String nilai, {Color? warna, bool tebal = false}) {
     final gaya = TextStyle(
@@ -109,7 +161,7 @@ class _RiwayatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selesai = data.status == 'Completed';
+    final selesai = data.status == 'completed';
     final rentang =
         '${tanggalPendek(data.mulai).substring(0, 6)} - ${tanggalPendek(data.selesai)}';
 
@@ -126,15 +178,14 @@ class _RiwayatCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                 decoration: BoxDecoration(
                   color: _warna.withAlpha(36),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: _warna),
                 ),
                 child: Text(
-                  data.status,
+                  Formatter.statusOrder(data.status),
                   style: TextStyle(
                     color: _warna,
                     fontSize: 10,
@@ -160,12 +211,19 @@ class _RiwayatCard extends StatelessWidget {
                 child: SizedBox(
                   width: 84,
                   height: 58,
-                  child: Image.asset(
-                    'assets/images/car1.png',
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Container(color: const Color(0xFF1F2937)),
-                  ),
+                  child: data.image.isEmpty
+                      ? Image.asset(
+                          'assets/images/car1.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(color: const Color(0xFF1F2937)),
+                        )
+                      : Image.network(
+                          data.image,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(color: const Color(0xFF1F2937)),
+                        ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -192,7 +250,7 @@ class _RiwayatCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${data.hari} Hari',
+                      '${data.hari} Hari • ${data.detailCount} mobil',
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 10,
@@ -203,20 +261,22 @@ class _RiwayatCard extends StatelessWidget {
               ),
             ],
           ),
-          if (selesai) ...[
+          if (selesai || data.denda > 0) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Divider(color: Color(0x40FFFFFF), height: 1),
             ),
+            _barisHarga('Total Sewa', Formatter.rupiah(data.totalPrice)),
+            const SizedBox(height: 4),
             if (data.denda > 0) ...[
               _barisHarga(
                 'Denda keterlambatan',
-                _rp(data.denda),
+                Formatter.rupiah(data.denda),
                 warna: const Color(0xFFEF4444),
               ),
               const SizedBox(height: 4),
             ],
-            _barisHarga('Total Bayar', _rp(data.total), tebal: true),
+            _barisHarga('Total Bayar', Formatter.rupiah(data.total), tebal: true),
           ],
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../controllers/auth_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../../core/routes/app_routes.dart';
 import 'register_view.dart';
 
@@ -12,14 +13,19 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  final AuthController _auth = AuthController();
+  late final AuthController _auth;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    _auth = AppControllers.of(context).auth;
+  }
+
+  @override
   void dispose() {
-    _auth.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();

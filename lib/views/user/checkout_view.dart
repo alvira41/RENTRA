@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../controllers/base_controller.dart';
+import '../../controllers/order_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
 import '../widgets/mitra_mobil_card.dart';
 import '../widgets/rentra_scaffold.dart';
 import 'payment_view.dart';
@@ -34,6 +37,7 @@ class PesananData {
     required this.kembali,
     required this.hari,
     required this.total,
+    this.idOrder,
   });
 
   final MitraMobilData mobil;
@@ -44,6 +48,7 @@ class PesananData {
   final DateTime kembali;
   final int hari;
   final int total;
+  final int? idOrder;
 }
 
 class CheckoutView extends StatefulWidget {
@@ -56,6 +61,7 @@ class CheckoutView extends StatefulWidget {
 }
 
 class _CheckoutViewState extends State<CheckoutView> {
+  late final OrderController _order;
   final _formKey = GlobalKey<FormState>();
   final _nama = TextEditingController();
   final _telepon = TextEditingController();
@@ -63,11 +69,21 @@ class _CheckoutViewState extends State<CheckoutView> {
 
   late DateTime _ambil;
   late DateTime _kembali;
-  bool _buktiOk = false;
+  UploadFile? _bukti;
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
+    _order = AppControllers.of(context).order;
+    _nama.text = AppControllers.of(context).auth.profile?['nama_user']?.toString() ?? '';
+    _telepon.text = AppControllers.of(context)
+            .auth
+            .profile?['no_telepon_user']
+            ?.toString() ??
+        '';
+    _alamat.text =
+        AppControllers.of(context).auth.profile?['alamat']?.toString() ?? '';
     final now = DateTime.now();
     _ambil = DateTime(now.year, now.month, now.day, 10);
     _kembali = _ambil.add(const Duration(days: 1));
@@ -135,22 +151,45 @@ class _CheckoutViewState extends State<CheckoutView> {
   }
 
   Future<void> _bukaPembayaran() async {
-    final ok = await Navigator.push<bool>(
+    final bukti = await Navigator.push<UploadFile>(
       context,
       MaterialPageRoute(builder: (_) => const PaymentView()),
     );
-    if (ok == true && mounted) setState(() => _buktiOk = true);
+    if (bukti != null && mounted) setState(() => _bukti = bukti);
   }
 
-  void _confirm() {
+  Future<void> _confirm() async {
     FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
     if (!_kembali.isAfter(_ambil)) {
       _pesan('Tanggal kembali harus setelah tanggal ambil');
       return;
     }
-    if (!_buktiOk) {
+    if (widget.mobil.id <= 0) {
+      _pesan('Data mobil tidak valid');
+      return;
+    }
+    if (_bukti == null) {
       _pesan('Pilih metode pembayaran dan unggah bukti dulu');
+      return;
+    }
+
+    setState(() => _loading = true);
+    final ok = await _order.createOrder(
+      [
+        {
+          'id_mobil': widget.mobil.id,
+          'tanggal_pinjam': _ambil,
+          'tanggal_kembali': _kembali,
+        },
+      ],
+      bukti: _bukti,
+    );
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (!ok) {
+      _pesan(_order.errorMessage ?? 'Pemesanan gagal');
       return;
     }
     final data = PesananData(
@@ -162,6 +201,7 @@ class _CheckoutViewState extends State<CheckoutView> {
       kembali: _kembali,
       hari: _hari,
       total: _total,
+      idOrder: _order.lastOrderId,
     );
     Navigator.pushReplacement(
       context,
@@ -416,7 +456,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                           color: const Color(0x26FFFFFF),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
-                            color: _buktiOk
+                            color: _bukti != null
                                 ? const Color(0xFF4ADE80)
                                 : const Color(0x80FFFFFF),
                           ),
@@ -435,11 +475,11 @@ class _CheckoutViewState extends State<CheckoutView> {
                               ),
                             ),
                             Icon(
-                              _buktiOk
+                              _bukti != null
                                   ? Icons.check_circle
                                   : Icons.chevron_right,
                               size: 18,
-                              color: _buktiOk
+                              color: _bukti != null
                                   ? const Color(0xFF4ADE80)
                                   : AppColors.textPrimary,
                             ),
@@ -447,7 +487,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                         ),
                       ),
                     ),
-                    if (_buktiOk)
+                    if (_bukti != null)
                       const Padding(
                         padding: EdgeInsets.only(top: 4),
                         child: Text(
@@ -471,7 +511,10 @@ class _CheckoutViewState extends State<CheckoutView> {
                 color: const Color(0xFFEF4444),
                 onTap: () => Navigator.pop(context),
               ),
-              SmallButton(label: 'Confirm', onTap: _confirm),
+              SmallButton(
+                label: _loading ? 'Menyimpan...' : 'Confirm',
+                onTap: _loading ? null : _confirm,
+              ),
             ],
           ),
         ],

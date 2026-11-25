@@ -1,36 +1,35 @@
 import 'package:flutter/material.dart';
+import '../../controllers/order_controller.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/controllers/app_controllers.dart';
+import '../../core/utils/formatter.dart';
+import '../../core/utils/image_picker_helper.dart';
 import '../widgets/mitra_mobil_card.dart';
 import '../widgets/user_page.dart';
 import 'checkout_view.dart';
 
-const int _dendaPerHari = 100000;
-const Duration _toleransi = Duration(days: 1);
-
-enum _Level { normal, peringatan, denda }
-
 class _Rental {
   const _Rental({
+    required this.idOrder,
+    required this.kode,
     required this.mobil,
+    required this.image,
     required this.ambil,
     required this.kembali,
     required this.status,
+    required this.buktiPayment,
+    required this.denda,
   });
 
+  final int idOrder;
+  final String kode;
   final MitraMobilData mobil;
+  final String image;
   final DateTime ambil;
   final DateTime kembali;
   final String status;
-}
-
-String _rp(int v) => rupiah(v).replaceFirst('Rp.', 'Rp ');
-
-String _durasi(Duration d) {
-  final hari = d.inDays;
-  final jam = d.inHours % 24;
-  if (hari > 0) return '$hari hari $jam jam';
-  if (d.inHours > 0) return '${d.inHours} jam';
-  return '${d.inMinutes} menit';
+  final String? buktiPayment;
+  final num denda;
 }
 
 class StatusRentalView extends StatefulWidget {
@@ -41,56 +40,114 @@ class StatusRentalView extends StatefulWidget {
 }
 
 class _StatusRentalViewState extends State<StatusRentalView> {
-  late final List<_Rental> _data;
+  late final OrderController _order;
+  final Map<String, Future<String?>> _buktiFutures = {};
 
-  static MitraMobilData _mobil() => MitraMobilData(
-        nama: 'PORSCHE 911 GT3 RS',
-        merk: 'Porsche',
-        nopol: 'N V174 OCT',
-        spesifikasi: 'Matic',
-        kapasitas: '2 orang',
-        bbm: 'Pertamax',
-        harga: 500000,
-        status: 'Disewa',
-      );
+  List<_Rental> get _rentals => _order.orders.map(_dariBaris).toList();
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    final dasar = DateTime(now.year, now.month, now.day, now.hour);
-    _data = [
-      _Rental(
-        mobil: _mobil(),
-        ambil: dasar.add(const Duration(days: 1)),
-        kembali: dasar.add(const Duration(days: 4, hours: 4)),
-        status: 'Pending',
+    _order = AppControllers.of(context).order;
+    _muat();
+  }
+
+  Future<void> _muat() async {
+    final ok = await _order.loadMyOrders();
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_order.errorMessage ?? 'Gagal memuat rental')),
+      );
+    }
+  }
+
+  _Rental _dariBaris(Map<String, dynamic> row) {
+    final details = List<Map<String, dynamic>>.from(
+      (row['order_details'] as List?) ?? const [],
+    );
+    final detail = details.isEmpty ? <String, dynamic>{} : details.first;
+    final katalog = (detail['katalog'] as Map?)?.cast<String, dynamic>();
+    final status = row['status']?.toString() ?? '-';
+    final path = row['bukti_payment']?.toString();
+
+    num denda = 0;
+    for (final d in details) {
+      final dendaRows = List<Map<String, dynamic>>.from(
+        (d['denda'] as List?) ?? const [],
+      );
+      for (final itemDenda in dendaRows) {
+        denda += (itemDenda['total_denda'] as num?) ?? 0;
+      }
+    }
+
+    final harga = (katalog?['price'] as num?)?.toInt() ??
+        (row['total_price'] as num?)?.toInt() ??
+        0;
+
+    return _Rental(
+      idOrder: (row['id_order'] as num?)?.toInt() ?? 0,
+      kode: row['transaction_code']?.toString() ?? '-',
+      mobil: MitraMobilData(
+        id: (detail['id_mobil'] as num?)?.toInt() ?? 0,
+        nama: katalog?['nama_mobil']?.toString() ?? '-',
+        merk: '-',
+        nopol: '-',
+        spesifikasi: '-',
+        kapasitas: '-',
+        bbm: '-',
+        harga: harga,
+        status: Formatter.statusOrder(status),
       ),
-      _Rental(
-        mobil: _mobil(),
-        ambil: dasar.subtract(const Duration(days: 2)),
-        kembali: dasar.add(const Duration(days: 1, hours: 4)),
-        status: 'Confirmed',
+      image: katalog?['image']?.toString() ?? '',
+      ambil: DateTime.tryParse(detail['tanggal_pinjam']?.toString() ?? '') ??
+          DateTime.now(),
+      kembali: DateTime.tryParse(detail['tanggal_kembali']?.toString() ?? '') ??
+          DateTime.now(),
+      status: status,
+      buktiPayment: path == null || path.isEmpty ? null : path,
+      denda: denda,
+    );
+  }
+
+  Future<String?> _buktiFuture(_Rental rental) {
+    final path = rental.buktiPayment;
+    if (path == null) return Future.value(null);
+    final key = '${rental.idOrder}:$path';
+    return _buktiFutures.putIfAbsent(key, () => _order.buktiUrl(path));
+  }
+
+  Future<void> _batal(_Rental rental) async {
+    final ok = await _order.cancelOrder(rental.idOrder);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Pesanan berhasil dibatalkan'
+              : _order.errorMessage ?? 'Pesanan gagal dibatalkan',
+        ),
       ),
-      _Rental(
-        mobil: _mobil(),
-        ambil: dasar.subtract(const Duration(days: 4)),
-        kembali: dasar.subtract(const Duration(hours: 6)),
-        status: 'Confirmed',
+    );
+  }
+
+  Future<void> _unggahBukti(_Rental rental) async {
+    final file = await pickUploadFile();
+    if (file == null || !mounted) return;
+    final ok = await _order.uploadBukti(rental.idOrder, file);
+    if (!mounted) return;
+    if (ok) {
+      _buktiFutures.clear();
+      setState(() {});
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Bukti pembayaran berhasil diunggah'
+              : _order.errorMessage ?? 'Bukti gagal diunggah',
+        ),
       ),
-      _Rental(
-        mobil: _mobil(),
-        ambil: dasar.subtract(const Duration(days: 6)),
-        kembali: dasar.subtract(const Duration(days: 1, hours: 4)),
-        status: 'Completed',
-      ),
-      _Rental(
-        mobil: _mobil(),
-        ambil: dasar.add(const Duration(days: 2)),
-        kembali: dasar.add(const Duration(days: 5)),
-        status: 'Ditolak',
-      ),
-    ];
+    );
   }
 
   @override
@@ -100,22 +157,38 @@ class _StatusRentalViewState extends State<StatusRentalView> {
       navIndex: 1,
       centerTitle: false,
       showBadge: false,
-      child: _data.isEmpty
-          ? const Center(
-              child: Text(
-                'Belum ada rental',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-              ),
-            )
-          : ListView.separated(
-              itemCount: _data.length,
-              separatorBuilder: (context, index) => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 18),
-                child: Divider(color: Color(0x26FFFFFF), height: 1),
-              ),
-              itemBuilder: (context, index) =>
-                  _RentalItem(rental: _data[index]),
-            ),
+      child: ListenableBuilder(
+        listenable: _order,
+        builder: (context, _) {
+          final rentals = _rentals;
+          if (_order.isLoading && rentals.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return rentals.isEmpty
+              ? const Center(
+                  child: Text(
+                    'Belum ada rental',
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                  ),
+                )
+              : ListView.separated(
+                  itemCount: rentals.length,
+                  separatorBuilder: (context, index) => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 18),
+                    child: Divider(color: Color(0x26FFFFFF), height: 1),
+                  ),
+                  itemBuilder: (context, index) {
+                    final rental = rentals[index];
+                    return _RentalItem(
+                      rental: rental,
+                      buktiFuture: _buktiFuture(rental),
+                      onCancel: () => _batal(rental),
+                      onUpload: () => _unggahBukti(rental),
+                    );
+                  },
+                );
+        },
+      ),
     );
   }
 }
@@ -142,18 +215,30 @@ class _Kotak extends StatelessWidget {
 }
 
 class _RentalItem extends StatelessWidget {
-  const _RentalItem({required this.rental});
+  const _RentalItem({
+    required this.rental,
+    required this.buktiFuture,
+    required this.onCancel,
+    required this.onUpload,
+  });
 
   final _Rental rental;
+  final Future<String?> buktiFuture;
+  final VoidCallback onCancel;
+  final VoidCallback onUpload;
 
   Color get _warnaStatus {
     switch (rental.status) {
-      case 'Confirmed':
+      case 'confirmed':
+      case 'ongoing':
         return const Color(0xFF4ADE80);
-      case 'Completed':
+      case 'completed':
         return const Color(0xFFE5E7EB);
-      case 'Ditolak':
+      case 'rejected':
+      case 'cancelled':
         return const Color(0xFFEF4444);
+      case 'pending':
+        return const Color(0xFFFB923C);
       default:
         return const Color(0xFF9CA3AF);
     }
@@ -184,53 +269,42 @@ class _RentalItem extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               tanggalPendek(d),
-              style: const TextStyle(
-                  color: AppColors.textPrimary, fontSize: 10),
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 10),
             ),
             Text(
               jamWib(d),
               style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 10),
+                color: AppColors.textSecondary,
+                fontSize: 10,
+              ),
             ),
           ],
         ),
       );
 
+  String get _judulWaktu {
+    switch (rental.status) {
+      case 'pending':
+        return 'Menunggu konfirmasi admin';
+      case 'confirmed':
+        return 'Mobil siap diambil';
+      case 'ongoing':
+        return 'Sedang digunakan';
+      case 'completed':
+        return 'Sewa selesai';
+      case 'rejected':
+        return 'Pesanan ditolak';
+      case 'cancelled':
+        return 'Pesanan dibatalkan';
+      default:
+        return Formatter.statusOrder(rental.status);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final m = rental.mobil;
-    final ditolak = rental.status == 'Ditolak';
-    final selisih = DateTime.now().difference(rental.kembali);
-    final terlambat = !selisih.isNegative;
-    final telat = terlambat ? selisih : Duration.zero;
-    final sisa = terlambat ? Duration.zero : -selisih;
-
-    _Level level = _Level.normal;
-    if (rental.status != 'Pending' && !ditolak && terlambat) {
-      level = telat < _toleransi ? _Level.peringatan : _Level.denda;
-    }
-
-    final hariDenda = level == _Level.denda ? telat.inDays : 0;
-    final totalDenda = hariDenda * _dendaPerHari;
-
-    final Color? warnaDenda = level == _Level.peringatan
-        ? const Color(0xFFFACC15)
-        : level == _Level.denda
-            ? const Color(0xFFEF4444)
-            : null;
-
-    final judulWaktu = ditolak
-        ? 'Pesanan ditolak'
-        : terlambat
-            ? 'Terlambat ${_durasi(telat)}'
-            : 'Sisa waktu ${_durasi(sisa)}';
-    final subWaktu = ditolak
-        ? 'Silakan hubungi admin atau lakukan pemesanan ulang'
-        : !terlambat
-        ? 'Kembalikan sebelum ${tanggalPendek(rental.kembali)}, ${jamWib(rental.kembali)} agar tidak terkena denda'
-        : level == _Level.peringatan
-            ? 'Toleransi tersisa ${_durasi(_toleransi - telat)}'
-            : 'Toleransi pengembalian sudah habis';
+    final dendaAktif = rental.denda > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,7 +317,7 @@ class _RentalItem extends StatelessWidget {
             border: Border.all(color: _warnaStatus),
           ),
           child: Text(
-            rental.status,
+            Formatter.statusOrder(rental.status),
             style: TextStyle(
               color: _warnaStatus,
               fontSize: 10,
@@ -263,12 +337,19 @@ class _RentalItem extends StatelessWidget {
                     child: SizedBox(
                       width: 84,
                       height: 58,
-                      child: Image.asset(
-                        'assets/images/car1.png',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Container(color: const Color(0xFF1F2937)),
-                      ),
+                      child: rental.image.isEmpty
+                          ? Image.asset(
+                              'assets/images/car1.png',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: const Color(0xFF1F2937)),
+                            )
+                          : Image.network(
+                              rental.image,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(color: const Color(0xFF1F2937)),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -286,6 +367,7 @@ class _RentalItem extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        _baris('Kode : ${rental.kode}'),
                         _baris('Merk Mobil : ${m.merk}'),
                         _baris('Nomor Polisi : ${m.nopol}'),
                         _baris('Spesifikasi : ${m.spesifikasi}'),
@@ -311,13 +393,17 @@ class _RentalItem extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _Kotak(
-          warna: ditolak ? const Color(0xFFEF4444) : null,
+          warna: rental.status == 'rejected' || rental.status == 'cancelled'
+              ? const Color(0xFFEF4444)
+              : null,
           child: Row(
             children: [
               Icon(
-                ditolak ? Icons.cancel_outlined : Icons.schedule,
+                rental.status == 'rejected' || rental.status == 'cancelled'
+                    ? Icons.cancel_outlined
+                    : Icons.schedule,
                 size: 18,
-                color: ditolak
+                color: rental.status == 'rejected' || rental.status == 'cancelled'
                     ? const Color(0xFFEF4444)
                     : AppColors.textPrimary,
               ),
@@ -327,7 +413,7 @@ class _RentalItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      judulWaktu,
+                      _judulWaktu,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 11,
@@ -335,7 +421,7 @@ class _RentalItem extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      subWaktu,
+                      'Kode order ${rental.kode}',
                       style: const TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 9,
@@ -349,15 +435,24 @@ class _RentalItem extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _Kotak(
-          warna: const Color(0xFFEF4444),
+          warna: dendaAktif ? const Color(0xFFEF4444) : null,
           child: Row(
             children: [
-              const Icon(Icons.warning_amber_rounded,
-                  size: 18, color: Color(0xFFEF4444)),
+              Icon(
+                dendaAktif
+                    ? Icons.warning_amber_rounded
+                    : Icons.receipt_long_outlined,
+                size: 18,
+                color: dendaAktif
+                    ? const Color(0xFFEF4444)
+                    : AppColors.textPrimary,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Denda keterlambatan ${_rp(_dendaPerHari)}/hari',
+                  dendaAktif
+                      ? 'Denda keterlambatan ${Formatter.rupiah(rental.denda)}'
+                      : 'Denda dihitung otomatis saat pengembalian',
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 11,
@@ -370,21 +465,16 @@ class _RentalItem extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _Kotak(
-          warna: warnaDenda,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: FutureBuilder<String?>(
+            future: buktiFuture,
+            builder: (context, snapshot) {
+              final url = snapshot.data;
+              return Row(
                 children: [
-                  Icon(
-                    level == _Level.normal
-                        ? Icons.receipt_long_outlined
-                        : level == _Level.peringatan
-                            ? Icons.warning_amber_rounded
-                            : Icons.error_outline,
+                  const Icon(
+                    Icons.receipt_long_outlined,
                     size: 18,
-                    color: warnaDenda ?? AppColors.textPrimary,
+                    color: AppColors.textPrimary,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -392,7 +482,7 @@ class _RentalItem extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Status Denda',
+                          'Bukti Pembayaran',
                           style: TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: 11,
@@ -400,89 +490,59 @@ class _RentalItem extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 2),
-                        if (level == _Level.normal)
-                          const Text(
-                            'Belum ada keterlambatan',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 10,
-                            ),
+                        Text(
+                          url == null
+                              ? 'Bukti belum diunggah'
+                              : 'Bukti tersedia',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 9,
                           ),
-                        if (level == _Level.peringatan) ...[
-                          const Text(
-                            'Peringatan!',
-                            style: TextStyle(
-                              color: Color(0xFFFACC15),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            'Terlambat ${_durasi(telat)}. Toleransi tersisa ${_durasi(_toleransi - telat)}. Kembalikan sekarang agar tidak terkena denda.',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                        if (level == _Level.denda) ...[
-                          Text(
-                            'Terlambat ${_durasi(telat)}',
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            'Denda berjalan $hariDenda hari x ${_rp(_dendaPerHari)}',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 10,
-                            ),
-                          ),
-                          const Text(
-                            'Tim kami akan mengecek denda dan menghubungi Anda.',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                child: Divider(color: Color(0x40FFFFFF), height: 1),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Total denda :',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 11,
+                  if (snapshot.connectionState == ConnectionState.waiting)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  else if (url != null)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: SizedBox(
+                        width: 48,
+                        height: 40,
+                        child: Image.network(
+                          url,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(color: const Color(0xFF1F2937)),
+                        ),
+                      ),
                     ),
-                  ),
-                  Text(
-                    _rp(totalDenda),
-                    style: TextStyle(
-                      color: level == _Level.denda
-                          ? const Color(0xFFEF4444)
-                          : AppColors.textPrimary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
                 ],
-              ),
-            ],
+              );
+            },
           ),
         ),
+        if (rental.status == 'pending') ...[
+          const SizedBox(height: 8),
+          _Kotak(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SmallButton(
+                  label: 'Batalkan',
+                  color: const Color(0xFFEF4444),
+                  onTap: onCancel,
+                ),
+                SmallButton(label: 'Unggah Bukti', onTap: onUpload),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

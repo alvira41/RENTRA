@@ -1,17 +1,38 @@
+import 'dart:convert';
+
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Koneksi Supabase. Key TIDAK ditulis di kode, kirim lewat --dart-define:
-/// flutter run --dart-define=SUPABASE_URL=https://xxxx.supabase.co --dart-define=SUPABASE_ANON_KEY=xxxx
+/// Koneksi Supabase. Nilai diambil dari file `assets/config/supabase.json`
+/// atau bisa ditimpa lewat --dart-define saat diperlukan.
 class SupabaseConfig {
-  static const String url = String.fromEnvironment('SUPABASE_URL');
-  static const String anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static const String _configAsset = 'assets/config/supabase.json';
+
+  static String url = String.fromEnvironment('SUPABASE_URL');
+  static String anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
   /// Panggil sekali di main() sebelum runApp().
   static Future<void> init() async {
-    assert(url.isNotEmpty && anonKey.isNotEmpty,
-        'SUPABASE_URL / SUPABASE_ANON_KEY belum diisi via --dart-define');
+    if (_isEmpty(url) || _isEmpty(anonKey)) {
+      final raw = await rootBundle.loadString(_configAsset);
+      final config = jsonDecode(raw) as Map<String, dynamic>;
+      url = config['SUPABASE_URL']?.toString() ?? url;
+      anonKey = config['SUPABASE_ANON_KEY']?.toString() ?? anonKey;
+    }
+
+    if (_isEmpty(url) ||
+        _isEmpty(anonKey) ||
+        url.contains('YOUR_PROJECT') ||
+        anonKey.contains('YOUR_ANON_KEY')) {
+      throw StateError(
+        'SUPABASE_URL / SUPABASE_ANON_KEY belum diisi. Ubah file assets/config/supabase.json',
+      );
+    }
+
     await Supabase.initialize(url: url, anonKey: anonKey);
   }
+
+  static bool _isEmpty(String value) => value.trim().isEmpty;
 
   static SupabaseClient get client => Supabase.instance.client;
 }
