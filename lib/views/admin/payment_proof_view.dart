@@ -142,9 +142,9 @@ class _PaymentProofViewState extends State<PaymentProofView> {
                                 date: _waktu(row['created_at']?.toString()),
                                 orderId: row['transaction_code']?.toString() ?? '-',
                                 customer:
-                                    (row['app_user'] as Map?)?['nama_user']?.toString() ??
+                                    (row['user'] as Map?)?['nama_user']?.toString() ??
                                     '-',
-                                phone: (row['app_user'] as Map?)?['no_telepon_user']
+                                phone: (row['user'] as Map?)?['no_telepon_user']
                                         ?.toString() ??
                                     '-',
                                 details: _detailMobil(row),

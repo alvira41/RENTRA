@@ -116,7 +116,7 @@ class _ReturnViewState extends State<ReturnView> {
     final status = row['status']?.toString() ?? '';
     if (status != 'confirmed' && status != 'ongoing') return [];
 
-    final user = (row['app_user'] as Map?)?.cast<String, dynamic>();
+    final user = (row['user'] as Map?)?.cast<String, dynamic>();
     final details = List<Map<String, dynamic>>.from(
       (row['order_details'] as List?) ?? const [],
     );

@@ -18,9 +18,26 @@ class OrderService {
     return id;
   }
 
-  static final String _orderSelect =
-      '*, ${Db.tUser}(nama_user, no_telepon_user), '
-      'order_details(*, katalog(nama_mobil, image, price), denda(*))';
+  static const String _orderSelect =
+      '*, order_details(*, katalog(nama_mobil, image, price), denda(*))';
+
+  Future<List<Row>> _lampirkanUser(List<Row> rows) async {
+    final ids = rows
+        .map((r) => r['id_user']?.toString())
+        .whereType<String>()
+        .toSet()
+        .toList();
+    if (ids.isEmpty) return rows;
+    final users = _rows(await _db
+        .from(Db.tUser)
+        .select('${Db.pkUser}, nama_user, no_telepon_user')
+        .inFilter(Db.pkUser, ids));
+    final byId = {for (final u in users) u[Db.pkUser]?.toString(): u};
+    for (final row in rows) {
+      row['user'] = byId[row['id_user']?.toString()];
+    }
+    return rows;
+  }
 
   // ---------- USER ----------
   /// items: [{id_mobil, tanggal_pinjam:'yyyy-MM-dd', tanggal_kembali:'yyyy-MM-dd'}]
@@ -99,21 +116,28 @@ class OrderService {
     if ((res as List).isEmpty) throw AppException('Order tidak bisa dibatalkan');
   }
 
-  Future<List<Row>> getMyOrders() async => _rows(await _db
+  Future<List<Row>> getMyOrders() async => _lampirkanUser(_rows(await _db
       .from('orders')
       .select(_orderSelect)
       .eq('id_user', _uid)
-      .order('created_at', ascending: false));
+      .order('created_at', ascending: false)));
 
   // ---------- ADMIN ----------
   Future<List<Row>> getAllOrders({String? status}) async {
     var q = _db.from('orders').select(_orderSelect);
     if (status != null) q = q.eq('status', status);
-    return _rows(await q.order('created_at', ascending: false));
+    return _lampirkanUser(_rows(await q.order('created_at', ascending: false)));
   }
 
-  Future<Row?> getOrderById(int idOrder) async =>
-      await _db.from('orders').select(_orderSelect).eq('id_order', idOrder).maybeSingle();
+  Future<Row?> getOrderById(int idOrder) async {
+    final row = await _db
+        .from('orders')
+        .select(_orderSelect)
+        .eq('id_order', idOrder)
+        .maybeSingle();
+    if (row == null) return null;
+    return (await _lampirkanUser([row])).first;
+  }
 
   Future<Row> _orderRow(int idOrder) async {
     final o = await _db.from('orders').select().eq('id_order', idOrder).maybeSingle();

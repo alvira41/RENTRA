@@ -73,7 +73,7 @@ class _ActivityViewState extends State<ActivityView> {
     );
     final detail = details.isEmpty ? <String, dynamic>{} : details.first;
     final katalog = (detail['katalog'] as Map?)?.cast<String, dynamic>();
-    final user = (row['app_user'] as Map?)?.cast<String, dynamic>();
+    final user = (row['user'] as Map?)?.cast<String, dynamic>();
     final mulai = DateTime.tryParse(detail['tanggal_pinjam']?.toString() ?? '');
     final kembali = DateTime.tryParse(detail['tanggal_kembali']?.toString() ?? '');
 
