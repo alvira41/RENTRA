@@ -1,8 +1,8 @@
 
 class OrderModel {
   final int idOrder;
-  final int idUser;
-  final int? idAdmin;
+  final String idUser;
+  final String? idAdmin;
   final String transactionCode;
   final String status;
   final double totalPrice;
@@ -18,18 +18,20 @@ class OrderModel {
     this.buktiPayment,
   });
 
+  // Mengubah data JSON dari Supabase menjadi OrderModel.
   factory OrderModel.fromJson(Map<String, dynamic> json) {
     return OrderModel(
-      idOrder: json['id_order'],
-      idUser: json['id_user'],
-      idAdmin: json['id_admin'],
-      transactionCode: json['transaction_code'],
-      status: json['status'],
+      idOrder: (json['id_order'] as num).toInt(),
+      idUser: json['id_user'].toString(),
+      idAdmin: json['id_admin']?.toString(),
+      transactionCode: json['transaction_code']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'pending',
       totalPrice: (json['total_price'] as num).toDouble(),
-      buktiPayment: json['bukti_payment'],
+      buktiPayment: json['bukti_payment']?.toString(),
     );
   }
 
+  // Mengubah OrderModel menjadi JSON untuk Supabase.
   Map<String, dynamic> toJson() {
     return {
       'id_order': idOrder,

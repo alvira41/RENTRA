@@ -60,17 +60,17 @@ class _EditPasswordViewState extends State<EditPasswordView> {
           hintStyle: const TextStyle(color: Colors.white, fontSize: 12),
           isDense: true,
           filled: true,
-          fillColor: Colors.white.withOpacity(0.1),
+          fillColor: Colors.white.withValues(alpha: 0.1),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           errorStyle: const TextStyle(fontSize: 10),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
           ),
           suffixIcon: GestureDetector(
             onTap: onToggle,
@@ -134,7 +134,7 @@ class _EditPasswordViewState extends State<EditPasswordView> {
                       onPressed: _loading ? null : _confirm,
                       style: OutlinedButton.styleFrom(
                         backgroundColor:
-                            const Color(0xFF1E3A8A).withOpacity(0.6),
+                            const Color(0xFF1E3A8A).withValues(alpha: 0.6),
                         side: const BorderSide(color: Color(0xFF60A5FA)),
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         shape: RoundedRectangleBorder(

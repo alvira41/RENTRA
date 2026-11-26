@@ -45,7 +45,7 @@ class _DashboardViewState extends State<DashboardView> {
     return _CarItem(
       id: (row['id_mobil'] as num?)?.toInt() ?? 0,
       name: row['nama_mobil']?.toString() ?? '-',
-      kategori: kategori?['name']?.toString() ?? '-',
+      kategori: kategori?['nama']?.toString() ?? '-',
       stok: (row['total_stock'] as num?)?.toInt() ?? 0,
       price: Formatter.rupiah(row['price'] as num?),
       image: row['image']?.toString() ?? '',

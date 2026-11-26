@@ -87,10 +87,10 @@ class KatalogController extends BaseController {
   }) =>
       run(() async {
         final data = <String, dynamic>{
-          if (idCategory != null) 'id_category': idCategory,
-          if (namaMobil != null) 'nama_mobil': namaMobil.trim(),
-          if (price != null) 'price': price,
-          if (totalStock != null) 'total_stock': totalStock,
+          'id_category':? idCategory,
+          'nama_mobil':? namaMobil?.trim(),
+          'price':? price,
+          'total_stock':? totalStock,
           if (fotoBaru != null)
             'image': await _storage.uploadKatalogImage(fotoBaru.bytes, fotoBaru.name),
         };
@@ -141,9 +141,9 @@ class KatalogController extends BaseController {
       run(() async {
         final uid = _auth.currentUid!;
         final data = <String, dynamic>{
-          if (namaMobilMitra != null) 'nama_mobil_mitra': namaMobilMitra.trim(),
-          if (totalStockMitra != null) 'total_stock_mitra': totalStockMitra,
-          if (idCategoryMitra != null) 'id_category_mitra': idCategoryMitra,
+          'nama_mobil_mitra':? namaMobilMitra?.trim(),
+          'total_stock_mitra':? totalStockMitra,
+          'id_category_mitra':? idCategoryMitra,
           if (fotoBaru != null)
             'image_mitra':
                 await _storage.uploadKatalogMitraImage(uid, fotoBaru.bytes, fotoBaru.name),

@@ -19,7 +19,7 @@ class _DashboardUserViewState extends State<DashboardUserView> {
 
   List<String> get _filters => [
         'Semua',
-        for (final k in _katalog.categories) k['name']?.toString() ?? '-',
+        for (final k in _katalog.categories) k['nama']?.toString() ?? '-',
       ];
 
   List<MitraMobilData> get _mobil => _katalog.katalog

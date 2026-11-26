@@ -61,7 +61,7 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
   int? _kategoriDariNama(String? nama) {
     if (nama == null || nama.isEmpty || nama == '-') return null;
     for (final row in _katalog.categories) {
-      if (row['name']?.toString() == nama) {
+      if (row['nama']?.toString() == nama) {
         return (row['id_category'] as num?)?.toInt();
       }
     }
@@ -139,17 +139,17 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
         hintStyle: const TextStyle(color: Colors.white54, fontSize: 11),
         isDense: true,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.08),
+        fillColor: Colors.white.withValues(alpha: 0.08),
         errorStyle: const TextStyle(fontSize: 10),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
         ),
       ),
     );
@@ -179,10 +179,10 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
                             height: 60,
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.08),
+                              color: Colors.white.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                  color: Colors.white.withOpacity(0.3)),
+                                  color: Colors.white.withValues(alpha: 0.3)),
                             ),
                             child: _foto == null
                                 ? const Icon(
@@ -217,10 +217,10 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.08),
+                          color: Colors.white.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(4),
                           border:
-                              Border.all(color: Colors.white.withOpacity(0.3)),
+                              Border.all(color: Colors.white.withValues(alpha: 0.3)),
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
@@ -237,7 +237,7 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
                                       .toInt()
                                       .toString(),
                                   child: Text(
-                                    row['name']?.toString() ?? '-',
+                                    row['nama']?.toString() ?? '-',
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 11,

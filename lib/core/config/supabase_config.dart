@@ -29,7 +29,7 @@ class SupabaseConfig {
       );
     }
 
-    await Supabase.initialize(url: url, anonKey: anonKey);
+    await Supabase.initialize(url: url, publishableKey: anonKey);
   }
 
   static bool _isEmpty(String value) => value.trim().isEmpty;
@@ -43,7 +43,7 @@ class Db {
   static const tAdmin = 'admin';
   static const pkAdmin = 'id_admin';
 
-  static const tUser = 'app_user'; // ganti ke 'users' jika tabelmu bernama users
+  static const tUser = 'user'; // ganti ke 'users' jika tabelmu bernama users
   static const pkUser = 'id_user'; // ganti ke 'id' jika kolom kuncinya id
 
   static const tMitra = 'mitra';

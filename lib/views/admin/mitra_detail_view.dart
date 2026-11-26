@@ -236,7 +236,7 @@ class _MobilCard extends StatelessWidget {
               height: 48,
               child: mobil.image.isEmpty
                   ? Container(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       child: const Icon(Icons.directions_car,
                           color: Colors.white70, size: 28),
                     )
@@ -244,7 +244,7 @@ class _MobilCard extends StatelessWidget {
                       mobil.image,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         child: const Icon(Icons.directions_car,
                             color: Colors.white70, size: 28),
                       ),

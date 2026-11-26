@@ -68,10 +68,10 @@ class AuthService {
       await _db.from(Db.tUser).upsert({
         Db.pkUser: uid,
         'nama_user': namaUser.trim(),
-        if (jenisKelamin != null) 'jenis_kelamin': jenisKelamin,
-        if (tanggalLahir != null) 'tanggal_lahir': tanggalLahir,
-        if (alamat != null) 'alamat': alamat,
-        if (noTeleponUser != null) 'no_telepon_user': noTeleponUser,
+        'jenis_kelamin':? jenisKelamin,
+        'tanggal_lahir':? tanggalLahir,
+        'alamat':? alamat,
+        'no_telepon_user':? noTeleponUser,
         if (noKtp != null && noKtp.isNotEmpty) 'no_ktp': noKtp,
       });
     }
@@ -108,8 +108,8 @@ class AuthService {
         'nama_rental': namaRental.trim(),
         'nama_pemilik': namaPemilik.trim(),
         'email': email.trim(),
-        if (alamat != null) 'alamat': alamat,
-        if (noTelepon != null) 'no_telepon': noTelepon,
+        'alamat':? alamat,
+        'no_telepon':? noTelepon,
       });
     }
 

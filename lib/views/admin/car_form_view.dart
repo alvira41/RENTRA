@@ -214,7 +214,7 @@ class _CarFormViewState extends State<CarFormView> {
                       labels: {
                         for (final k in _katalog.categories)
                           (k['id_category'] as num).toInt().toString():
-                              k['name']?.toString() ?? '-',
+                              k['nama']?.toString() ?? '-',
                       },
                       onChanged: (v) => setState(() => _idKategori = v),
                     ),

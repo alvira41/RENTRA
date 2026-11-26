@@ -34,7 +34,7 @@ class MitraMobilData {
     return MitraMobilData(
       id: (row['id_mobil'] as num?)?.toInt() ?? 0,
       nama: row['nama_mobil']?.toString() ?? '-',
-      merk: kategori?['name']?.toString() ?? '-',
+      merk: kategori?['nama']?.toString() ?? '-',
       nopol: '-',
       spesifikasi: '-',
       kapasitas: '-',
@@ -52,7 +52,7 @@ class MitraMobilData {
     return MitraMobilData(
       id: (row['id_mobil_mitra'] as num?)?.toInt() ?? 0,
       nama: row['nama_mobil_mitra']?.toString() ?? '-',
-      merk: kategori?['name']?.toString() ?? '-',
+      merk: kategori?['nama']?.toString() ?? '-',
       nopol: '-',
       spesifikasi: '-',
       kapasitas: '-',

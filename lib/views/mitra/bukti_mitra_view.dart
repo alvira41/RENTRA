@@ -89,7 +89,7 @@ class BuktiMitraView extends StatelessWidget {
                           height: 220,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Icon(Icons.receipt_long,
