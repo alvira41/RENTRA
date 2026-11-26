@@ -91,6 +91,8 @@ class _MitraFormViewState extends State<MitraFormView> {
       _showMessage(_auth.errorMessage ?? 'Mitra gagal ditambahkan');
       return;
     }
+    await AppControllers.of(context).supply.loadMitraList();
+    if (!mounted) return;
     _showMessage('Mitra berhasil ditambahkan');
     Navigator.of(context).pop();
   }

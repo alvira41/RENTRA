@@ -120,13 +120,13 @@ class OrderService {
       .from('orders')
       .select(_orderSelect)
       .eq('id_user', _uid)
-      .order('created_at', ascending: false)));
+      .order('id_order', ascending: false)));
 
   // ---------- ADMIN ----------
   Future<List<Row>> getAllOrders({String? status}) async {
     var q = _db.from('orders').select(_orderSelect);
     if (status != null) q = q.eq('status', status);
-    return _lampirkanUser(_rows(await q.order('created_at', ascending: false)));
+    return _lampirkanUser(_rows(await q.order('id_order', ascending: false)));
   }
 
   Future<Row?> getOrderById(int idOrder) async {

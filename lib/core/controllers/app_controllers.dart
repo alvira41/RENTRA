@@ -54,8 +54,12 @@ class AppControllersScope extends InheritedWidget {
 }
 
 class AppControllersData {
+  AppControllersData() {
+    katalog = KatalogController(auth: auth);
+  }
+
   final AuthController auth = AuthController();
-  final KatalogController katalog = KatalogController();
+  late final KatalogController katalog;
   final OrderController order = OrderController();
   final SupplyController supply = SupplyController();
 

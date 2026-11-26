@@ -102,15 +102,24 @@ class AuthService {
 
     final uid = res.user?.id;
 
-    if (uid != null && res.session != null) {
-      await _db.from(Db.tMitra).upsert({
-        Db.pkMitra: uid,
+    if (uid != null) {
+      final data = {
         'nama_rental': namaRental.trim(),
         'nama_pemilik': namaPemilik.trim(),
         'email': email.trim(),
         'alamat':? alamat,
         'no_telepon':? noTelepon,
-      });
+      };
+      final existing = await _db
+          .from(Db.tMitra)
+          .select(Db.pkMitra)
+          .eq('auth_user_id', uid)
+          .maybeSingle();
+      if (existing == null) {
+        await _db.from(Db.tMitra).insert({'auth_user_id': uid, ...data});
+      } else {
+        await _db.from(Db.tMitra).update(data).eq('auth_user_id', uid);
+      }
     }
 
     return res;
@@ -141,11 +150,11 @@ class AuthService {
     }
 
     // MITRA:
-    // Menggunakan primary key sesuai konfigurasi Db.
+    // UUID Supabase Auth ada di kolom auth_user_id, bukan id_mitra.
     final mitra = await _db
         .from(Db.tMitra)
-        .select(Db.pkMitra)
-        .eq(Db.pkMitra, uid)
+        .select('auth_user_id')
+        .eq('auth_user_id', uid)
         .maybeSingle();
 
     if (mitra != null) {
@@ -178,7 +187,7 @@ class AuthService {
         return (Db.tAdmin, 'auth_user_id');
 
       case AppRole.mitra:
-        return (Db.tMitra, Db.pkMitra);
+        return (Db.tMitra, 'auth_user_id');
 
       case AppRole.user:
         return (Db.tUser, Db.pkUser);

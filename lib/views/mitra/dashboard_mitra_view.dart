@@ -25,7 +25,7 @@ class _DashboardMitraViewState extends State<DashboardMitraView> {
     final controllers = AppControllers.of(context);
     _katalog = controllers.katalog;
     _supply = controllers.supply;
-    _idMitra = controllers.auth.uid;
+    _idMitra = controllers.auth.idMitra;
     _muat();
   }
 

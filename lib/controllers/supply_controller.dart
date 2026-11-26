@@ -17,7 +17,7 @@ class SupplyController extends BaseController {
   /// Admin: daftar mitra untuk dropdown.
   Future<bool> loadMitraList() => run(() async => mitraList = await _service.getMitraList());
 
-  /// Admin: semua supply. Mitra: isi [idMitra] dengan uid miliknya (auth.uid).
+  /// Admin: semua supply. Mitra: isi [idMitra] dengan id_mitra miliknya.
   Future<bool> loadSupplies({String? status, String? idMitra}) => run(() async {
         _idMitra = idMitra;
         supplies = await _service.getSupplies(status: status, idMitra: idMitra);
@@ -61,7 +61,9 @@ class SupplyController extends BaseController {
   Future<bool> markReturned(int idSupply) => _respond(idSupply, 'returned');
 
   Future<bool> _respond(int idSupply, String status) => run(() async {
-        await _service.respondSupply(idSupply, status);
+        final idMitra = _idMitra;
+        if (idMitra == null) throw AppException('Mitra tidak valid');
+        await _service.respondSupply(idSupply, status, idMitra: idMitra);
         await _reload();
       });
 }

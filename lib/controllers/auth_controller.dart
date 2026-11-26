@@ -21,6 +21,10 @@ class AuthController extends BaseController {
   bool get isUser => _role == AppRole.user;
   bool get isMitra => _role == AppRole.mitra;
   String? get uid => _service.currentUid;
+  String? get idMitra {
+    if (!isMitra) return null;
+    return _profile?['id_mitra']?.toString();
+  }
 
   Future<void> _loadRole() async {
     final role = await _service.getRole();

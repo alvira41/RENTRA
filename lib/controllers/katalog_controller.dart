@@ -1,17 +1,18 @@
-import '../services/auth_service.dart';
 import '../services/katalog_service.dart';
 import '../services/storage_service.dart';
+import 'auth_controller.dart';
 import 'base_controller.dart';
 
 /// Kategori, katalog mobil, dan katalog mitra.
 class KatalogController extends BaseController {
   final KatalogService _service;
   final StorageService _storage;
-  final AuthService _auth;
-  KatalogController({KatalogService? service, StorageService? storage, AuthService? auth})
+  final AuthController _auth;
+  KatalogController(
+      {KatalogService? service, StorageService? storage, AuthController? auth})
       : _service = service ?? KatalogService(),
         _storage = storage ?? StorageService(),
-        _auth = auth ?? AuthService();
+        _auth = auth ?? AuthController();
 
   List<Map<String, dynamic>> categories = [];
   List<Map<String, dynamic>> katalog = [];
@@ -104,9 +105,18 @@ class KatalogController extends BaseController {
       });
 
   // ---------- KATALOG MITRA ----------
+  String get _idMitraSaya {
+    final id = _auth.idMitra;
+    if (id == null) throw AppException('Profil mitra belum tersedia');
+    return id;
+  }
+
   /// Admin: kosongkan [idMitra] untuk semua mitra. Mitra: otomatis hanya miliknya.
-  Future<bool> loadKatalogMitra({String? idMitra}) =>
-      run(() async => katalogMitra = await _service.getKatalogMitra(idMitra: idMitra));
+  Future<bool> loadKatalogMitra({String? idMitra}) {
+    final filter = idMitra ?? (_auth.isMitra ? _auth.idMitra : null);
+    return run(() async =>
+        katalogMitra = await _service.getKatalogMitra(idMitra: filter));
+  }
 
   /// Mitra menambah mobilnya sendiri.
   Future<bool> addKatalogMitra({
@@ -117,17 +127,18 @@ class KatalogController extends BaseController {
   }) {
     if (namaMobilMitra.trim().isEmpty) return Future.value(setError('Nama mobil wajib diisi'));
     return run(() async {
-      final uid = _auth.currentUid!;
+      final uid = _auth.uid!;
+      final idMitra = _idMitraSaya;
       final url = foto == null
           ? null
           : await _storage.uploadKatalogMitraImage(uid, foto.bytes, foto.name);
       await _service.addKatalogMitra(
-          idMitra: uid,
+          idMitra: idMitra,
           namaMobilMitra: namaMobilMitra,
           totalStockMitra: totalStockMitra,
           idCategoryMitra: idCategoryMitra,
           imageMitra: url);
-      katalogMitra = await _service.getKatalogMitra(idMitra: uid);
+      katalogMitra = await _service.getKatalogMitra(idMitra: idMitra);
     });
   }
 
@@ -139,7 +150,8 @@ class KatalogController extends BaseController {
     UploadFile? fotoBaru,
   }) =>
       run(() async {
-        final uid = _auth.currentUid!;
+        final uid = _auth.uid!;
+        final idMitra = _idMitraSaya;
         final data = <String, dynamic>{
           'nama_mobil_mitra':? namaMobilMitra?.trim(),
           'total_stock_mitra':? totalStockMitra,
@@ -149,11 +161,11 @@ class KatalogController extends BaseController {
                 await _storage.uploadKatalogMitraImage(uid, fotoBaru.bytes, fotoBaru.name),
         };
         if (data.isNotEmpty) await _service.updateKatalogMitra(idMobilMitra, data);
-        katalogMitra = await _service.getKatalogMitra(idMitra: uid);
+        katalogMitra = await _service.getKatalogMitra(idMitra: idMitra);
       });
 
   Future<bool> deleteKatalogMitra(int idMobilMitra) => run(() async {
         await _service.deleteKatalogMitra(idMobilMitra);
-        katalogMitra = await _service.getKatalogMitra(idMitra: _auth.currentUid);
+        katalogMitra = await _service.getKatalogMitra(idMitra: _idMitraSaya);
       });
 }

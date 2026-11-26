@@ -23,7 +23,7 @@ class _AktivitasMitraViewState extends State<AktivitasMitraView> {
     super.initState();
     final controllers = AppControllers.of(context);
     _supply = controllers.supply;
-    _idMitra = controllers.auth.uid;
+    _idMitra = controllers.auth.idMitra;
     _muat();
   }
 

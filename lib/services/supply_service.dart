@@ -52,19 +52,23 @@ class SupplyService {
       await _db.from('supply').delete().eq('id_supply', idSupply);
 
   /// Mitra: pending -> approved/rejected, approved -> returned.
-  Future<void> respondSupply(int idSupply, String status) async {
-    final uid = _uid;
+  Future<void> respondSupply(int idSupply, String status,
+      {required String idMitra}) async {
     final row = await _db
         .from('supply')
         .select('status')
         .eq('id_supply', idSupply)
-        .eq('id_mitra', uid)
+        .eq('id_mitra', idMitra)
         .maybeSingle();
     if (row == null) throw AppException('Supply tidak ditemukan');
     final cur = row['status'];
     final ok = (cur == 'pending' && (status == 'approved' || status == 'rejected')) ||
         (cur == 'approved' && status == 'returned');
     if (!ok) throw AppException('Perubahan status tidak valid');
-    await _db.from('supply').update({'status': status}).eq('id_supply', idSupply).eq('id_mitra', uid);
+    await _db
+        .from('supply')
+        .update({'status': status})
+        .eq('id_supply', idSupply)
+        .eq('id_mitra', idMitra);
   }
 }

@@ -139,7 +139,7 @@ class _PaymentProofViewState extends State<PaymentProofView> {
                               _InfoCard(
                                 status: Formatter.statusOrder(row['status']?.toString()),
                                 method: 'Transfer Bank',
-                                date: _waktu(row['created_at']?.toString()),
+                                date: _tanggalOrder(row),
                                 orderId: row['transaction_code']?.toString() ?? '-',
                                 customer:
                                     (row['user'] as Map?)?['nama_user']?.toString() ??
@@ -210,6 +210,13 @@ class _PaymentProofViewState extends State<PaymentProofView> {
         ],
       ),
     );
+  }
+
+  String _tanggalOrder(Map<String, dynamic> row) {
+    final details = (row['order_details'] as List?) ?? const [];
+    final first = details.isEmpty ? null : details.first as Map<String, dynamic>;
+    return _waktu(
+        row['created_at']?.toString() ?? first?['tanggal_pinjam']?.toString());
   }
 
   String _waktu(String? iso) {
