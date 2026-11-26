@@ -44,8 +44,11 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
   }
 
   Future<void> _muat() async {
-    await _katalog.loadCategories();
+    final categoriesLoaded = await _katalog.loadCategories();
     if (!mounted) return;
+    if (!categoriesLoaded) {
+      _pesan(_katalog.errorMessage ?? 'Gagal memuat kategori');
+    }
     if (widget.isEdit && widget.mobil != null && _idKategori == null) {
       _idKategori = _idKategoriDariNama(widget.mobil!.merk);
     }

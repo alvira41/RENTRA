@@ -50,12 +50,20 @@ class _ReturnViewState extends State<ReturnView> {
   DateTime _tanggal = DateTime.now();
   List<_ReturnItem> _items = [];
   final Set<int> _selected = {};
+  bool _dimuat = false;
 
   @override
   void initState() {
     super.initState();
     _order = AppControllers.of(context).order;
     _dendaController = TextEditingController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_dimuat) return;
+    _dimuat = true;
 
     final args = ModalRoute.of(context)?.settings.arguments;
     if (widget.idOrder != null) {

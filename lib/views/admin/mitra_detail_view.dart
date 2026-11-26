@@ -16,8 +16,9 @@ class MitraDetailView extends StatefulWidget {
 class _MitraDetailViewState extends State<MitraDetailView> {
   late final KatalogController _katalog;
   late final SupplyController _supply;
-  late final String? _idMitra;
+  String? _idMitra;
   bool _loading = true;
+  bool _dimuat = false;
 
   String get _namaRental => _supply.mitraList
           .where((m) => m['id_mitra']?.toString() == _idMitra)
@@ -39,6 +40,14 @@ class _MitraDetailViewState extends State<MitraDetailView> {
     final controllers = AppControllers.of(context);
     _katalog = controllers.katalog;
     _supply = controllers.supply;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_dimuat) return;
+    _dimuat = true;
+
     final args = ModalRoute.of(context)?.settings.arguments;
     _idMitra = widget.idMitra ??
         (args is String ? args : args?.toString());
@@ -68,12 +77,13 @@ class _MitraDetailViewState extends State<MitraDetailView> {
       }).toList();
 
   Future<void> _ajukanSupply() async {
-    if (_idMitra == null || _idMitra.isEmpty) {
+    final idMitra = _idMitra;
+    if (idMitra == null || idMitra.isEmpty) {
       _pesan('Mitra tidak valid');
       return;
     }
     final ok = await _supply.createSupply(
-      idMitra: _idMitra,
+      idMitra: idMitra,
       tanggalSupply: DateTime.now(),
     );
     if (!mounted) return;

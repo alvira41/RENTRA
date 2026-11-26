@@ -5,6 +5,7 @@ import '../../controllers/katalog_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/controllers/app_controllers.dart';
 import '../../core/utils/image_picker_helper.dart';
+import '../../core/routes/app_routes.dart';
 import '../widgets/add_options_dialog.dart';
 import '../widgets/admin_bottom_bar.dart';
 
@@ -45,8 +46,16 @@ class _CarFormViewState extends State<CarFormView> {
     return text.isEmpty ? null : text;
   }
 
-  Future<void> _muat() async {
-    await _katalog.loadCategories();
+  Future<void> _muat({bool dariTombol = false}) async {
+    final categoriesLoaded = await _katalog.loadCategories();
+    if (!mounted) return;
+    if (!categoriesLoaded) {
+      _showMessage(_katalog.errorMessage ?? 'Gagal memuat kategori');
+    } else if (dariTombol) {
+      _showMessage(_katalog.categories.isEmpty
+          ? 'Tidak ada kategori di tabel category'
+          : '${_katalog.categories.length} kategori berhasil dimuat');
+    }
     if (widget.isEdit && widget.idMobil != null) {
       final mobil = await _katalog.getKatalogById(widget.idMobil!);
       if (mobil == null || !mounted) return;
@@ -126,7 +135,10 @@ class _CarFormViewState extends State<CarFormView> {
     _showMessage(
       widget.isEdit ? 'Data mobil diperbarui' : 'Mobil berhasil ditambahkan',
     );
-    Navigator.of(context).pop();
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRoutes.adminDashboard,
+      (route) => false,
+    );
   }
 
   Future<void> _pilihFoto() async {
@@ -234,7 +246,7 @@ class _CarFormViewState extends State<CarFormView> {
                               k['nama']?.toString() ?? '-',
                       },
                       onChanged: (v) => setState(() => _idKategori = v),
-                      onRefresh: _muat,
+                      onRefresh: () => _muat(dariTombol: true),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -443,13 +455,16 @@ class _DropdownBox extends StatelessWidget {
               ),
             ),
             if (onRefresh != null)
-              InkWell(
-                onTap: () => onRefresh!(),
-                child: const Icon(
+              IconButton(
+                icon: const Icon(
                   Icons.refresh,
                   color: AppColors.buttonText,
                   size: 16,
                 ),
+                onPressed: () => onRefresh!(),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 38),
+                tooltip: 'Muat ulang kategori',
               ),
           ],
         ),
@@ -458,41 +473,59 @@ class _DropdownBox extends StatelessWidget {
 
     return Container(
       height: 38,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: decoration,
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          isExpanded: true,
-          hint: const Text(
-            'Pilih kategori',
-            style: TextStyle(
-              color: AppColors.buttonText,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+      child: Row(
+        children: [
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: value,
+                isExpanded: true,
+                hint: const Text(
+                  'Pilih kategori',
+                  style: TextStyle(
+                    color: AppColors.buttonText,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                dropdownColor: const Color(0xFFD3D6E0),
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: AppColors.buttonText,
+                  size: 18,
+                ),
+                style: const TextStyle(
+                  color: AppColors.buttonText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+                items: items
+                    .map(
+                      (item) => DropdownMenuItem<String>(
+                        value: item,
+                        child: Text(labels?[item] ?? item),
+                      ),
+                    )
+                    .toList(),
+                onChanged: onChanged,
+              ),
             ),
           ),
-          dropdownColor: const Color(0xFFD3D6E0),
-          icon: const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: AppColors.buttonText,
-            size: 18,
-          ),
-          style: const TextStyle(
-            color: AppColors.buttonText,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-          items: items
-              .map(
-                (item) => DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(labels?[item] ?? item),
-                ),
-              )
-              .toList(),
-          onChanged: onChanged,
-        ),
+          if (onRefresh != null)
+            IconButton(
+              icon: const Icon(
+                Icons.refresh,
+                color: AppColors.buttonText,
+                size: 16,
+              ),
+              onPressed: () => onRefresh!(),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 38),
+              tooltip: 'Muat ulang kategori',
+            ),
+        ],
       ),
     );
   }

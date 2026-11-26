@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/config/supabase_config.dart';
 import '../widgets/rentra_scaffold.dart';
 
 class EditPasswordView extends StatefulWidget {
@@ -27,11 +29,36 @@ class _EditPasswordViewState extends State<EditPasswordView> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      await Future.delayed(const Duration(milliseconds: 600));
+      final auth = SupabaseConfig.client.auth;
+      final email = auth.currentUser?.email;
+      if (email == null) throw const AuthException('Sesi login tidak ditemukan');
+
+      await auth.signInWithPassword(
+        email: email,
+        password: _lamaC.text.trim(),
+      );
+      await auth.updateUser(
+        UserAttributes(password: _baruC.text.trim()),
+      );
+      await auth.signOut();
+      await auth.signInWithPassword(
+        email: email,
+        password: _baruC.text.trim(),
+      );
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Password berhasil diubah')));
+        SnackBar(content: Text('Password $email berhasil diubah')),
+      );
       Navigator.pop(context);
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      final pesan = e.message.toLowerCase().contains('invalid login') ||
+              e.message.toLowerCase().contains('invalid credentials')
+          ? 'Password lama salah'
+          : e.message;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Gagal: $pesan')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)

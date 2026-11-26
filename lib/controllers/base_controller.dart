@@ -63,7 +63,12 @@ abstract class BaseController extends ChangeNotifier {
       return 'Email sudah terdaftar';
     }
     if (m.contains('email not confirmed')) return 'Email belum dikonfirmasi, cek inbox kamu';
-    if (m.contains('rate limit')) return 'Terlalu banyak percobaan, tunggu sebentar';
+    if (m.contains('over_email_send_rate_limit') || m.contains('email rate limit')) {
+      return 'Kuota email Supabase habis (2 email/jam), tunggu ±1 jam';
+    }
+    if (m.contains('rate limit') || m.contains('too many requests')) {
+      return 'Terlalu banyak percobaan, tunggu beberapa menit';
+    }
     if (m.contains('users_no_ktp_key') || m.contains('no_ktp')) return 'No KTP sudah terdaftar';
     if (m.contains('category_name_key')) return 'Nama kategori sudah ada';
     if (m.contains('foreign key')) return 'Data masih dipakai data lain, tidak bisa dihapus';
