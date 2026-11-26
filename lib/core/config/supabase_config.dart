@@ -43,7 +43,7 @@ class Db {
   static const tAdmin = 'admin';
   static const pkAdmin = 'id_admin';
 
-  static const tUser = 'user'; // ganti ke 'users' jika tabelmu bernama users
+  static const tUser = 'users';
   static const pkUser = 'id_user'; // ganti ke 'id' jika kolom kuncinya id
 
   static const tMitra = 'mitra';
