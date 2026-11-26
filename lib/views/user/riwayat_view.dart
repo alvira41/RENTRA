@@ -166,10 +166,10 @@ class _RiwayatCard extends StatelessWidget {
         '${tanggalPendek(data.mulai).substring(0, 6)} - ${tanggalPendek(data.selesai)}';
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0x26FFFFFF),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0x40FFFFFF)),
       ),
       child: Column(
@@ -178,17 +178,17 @@ class _RiwayatCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                 decoration: BoxDecoration(
                   color: _warna.withAlpha(36),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: _warna),
                 ),
                 child: Text(
                   Formatter.statusOrder(data.status),
                   style: TextStyle(
                     color: _warna,
-                    fontSize: 10,
+                    fontSize: 8,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -207,7 +207,7 @@ class _RiwayatCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(8),
                 child: SizedBox(
                   width: 84,
                   height: 58,

@@ -90,11 +90,15 @@ class _StatusRentalViewState extends State<StatusRentalView> {
       mobil: MitraMobilData(
         id: (detail['id_mobil'] as num?)?.toInt() ?? 0,
         nama: katalog?['nama_mobil']?.toString() ?? '-',
-        merk: '-',
-        nopol: '-',
-        spesifikasi: '-',
-        kapasitas: '-',
-        bbm: '-',
+        merk: katalog?['merk']?.toString() ?? '',
+        nopol: katalog?['nopol']?.toString() ?? '',
+        spesifikasi: (katalog?['spesifikasi'] ??
+                katalog?['category']?['nama'])
+            ?.toString() ??
+            '',
+        kapasitas: katalog?['kapasitas']?.toString() ?? '',
+        bbm: katalog?['bbm']?.toString() ?? '',
+        kategori: katalog?['category']?['nama']?.toString() ?? '',
         harga: harga,
         status: Formatter.statusOrder(status),
       ),
@@ -206,7 +210,7 @@ class _Kotak extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: warna == null ? const Color(0x26FFFFFF) : warna!.withAlpha(36),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: warna ?? const Color(0x40FFFFFF)),
       ),
       child: child,
@@ -244,16 +248,20 @@ class _RentalItem extends StatelessWidget {
     }
   }
 
-  Widget _baris(String t) => Text(
-        t,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 9,
-          height: 1.4,
-        ),
-      );
+  Widget _baris(String t) {
+    final isi = t.split(':').skip(1).join(':').trim();
+    if (isi.isEmpty || isi == '-') return const SizedBox.shrink();
+    return Text(
+      t,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        color: AppColors.textPrimary,
+        fontSize: 9,
+        height: 1.4,
+      ),
+    );
+  }
 
   Widget _tanggal(String label, DateTime d) => Expanded(
         child: Column(
@@ -310,17 +318,17 @@ class _RentalItem extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           decoration: BoxDecoration(
             color: _warnaStatus.withAlpha(36),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: _warnaStatus),
           ),
           child: Text(
             Formatter.statusOrder(rental.status),
             style: TextStyle(
               color: _warnaStatus,
-              fontSize: 10,
+              fontSize: 8,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -510,7 +518,7 @@ class _RentalItem extends StatelessWidget {
                     )
                   else if (url != null)
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(8),
                       child: SizedBox(
                         width: 48,
                         height: 40,

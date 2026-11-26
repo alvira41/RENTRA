@@ -153,7 +153,7 @@ class _OrderViewState extends State<OrderView> {
                     'KONFIRMASI PESANAN',
                     style: TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.3,
                     ),
@@ -369,7 +369,7 @@ class _ActionChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: color.withAlpha(40),

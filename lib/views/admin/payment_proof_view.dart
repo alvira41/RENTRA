@@ -70,7 +70,7 @@ class _PaymentProofViewState extends State<PaymentProofView> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final sidePadding = width * 0.08;
+    final sidePadding = width * 0.06;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -155,7 +155,7 @@ class _PaymentProofViewState extends State<PaymentProofView> {
                                   'Bukti Pembayaran',
                                   style: TextStyle(
                                     color: AppColors.textPrimary,
-                                    fontSize: 12,
+                                    fontSize: 16,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -584,18 +584,18 @@ class _PillButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0x14FFFFFF),
-          borderRadius: BorderRadius.circular(20),
+          color: color.withAlpha(50),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color),
         ),
         child: Text(
           label,
-          style: TextStyle(
-            color: color,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
             fontSize: 10,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

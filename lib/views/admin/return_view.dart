@@ -261,8 +261,9 @@ class _ReturnViewState extends State<ReturnView> {
                     'Pengembalian',
                     style: TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
@@ -550,18 +551,18 @@ class _PillButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: fill,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: border),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: textColor,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),

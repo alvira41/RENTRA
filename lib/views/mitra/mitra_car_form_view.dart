@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../controllers/base_controller.dart';
 import '../../controllers/katalog_controller.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/controllers/app_controllers.dart';
 import '../../core/utils/image_picker_helper.dart';
 import '../widgets/mitra_mobil_card.dart';
@@ -11,62 +13,85 @@ class MitraCarFormView extends StatefulWidget {
   const MitraCarFormView({super.key, this.isEdit = false, this.mobil});
 
   final bool isEdit;
-  final MitraMobilData? mobil;
+  final Map<String, dynamic>? mobil;
 
   @override
   State<MitraCarFormView> createState() => _MitraCarFormViewState();
 }
 
 class _MitraCarFormViewState extends State<MitraCarFormView> {
-  late final KatalogController _katalog;
   final _formKey = GlobalKey<FormState>();
+  late final KatalogController _katalog;
+  late final TextEditingController _merk;
   late final TextEditingController _nama;
-  late final TextEditingController _stok;
+  late final TextEditingController _nopol;
+  late final TextEditingController _kapasitas;
+  late final TextEditingController _bbm;
+  late final TextEditingController _harga;
+  late final TextEditingController _deskripsi;
+
   String? _idKategori;
   UploadFile? _foto;
   bool _loading = false;
+  bool _kategoriSiap = false;
 
   @override
   void initState() {
     super.initState();
     _katalog = AppControllers.of(context).katalog;
-    _nama = TextEditingController(text: widget.mobil?.nama ?? '');
-    _stok = TextEditingController(
-        text: widget.mobil == null ? '' : '${widget.mobil!.stok}');
-    _muat();
-  }
+    final m = widget.mobil;
+    String teks(List<String> keys) {
+      for (final key in keys) {
+        final value = m?[key];
+        if (value == null) continue;
+        final s = value.toString().trim();
+        if (s.isNotEmpty && s != '-') return s;
+      }
+      return '';
+    }
 
-  String? _categoryIdOf(dynamic value) {
-    if (value == null) return null;
-    if (value is num) return value.toInt().toString();
-    final text = value.toString().trim();
-    return text.isEmpty ? null : text;
-  }
-
-  Future<void> _muat() async {
-    final categoriesLoaded = await _katalog.loadCategories();
-    if (!mounted) return;
-    if (!categoriesLoaded) {
-      _pesan(_katalog.errorMessage ?? 'Gagal memuat kategori');
-    }
-    if (widget.isEdit && widget.mobil != null && _idKategori == null) {
-      _idKategori = _idKategoriDariNama(widget.mobil!.merk);
-    }
-    final ids = _katalog.categories
-        .map(_categoryIdOf)
-        .whereType<String>()
-        .toList();
-    if (_idKategori != null && !ids.contains(_idKategori)) {
-      _idKategori = null;
-    }
-    setState(() {});
+    _merk = TextEditingController(text: teks(const ['merk', 'merk_mobil']));
+    _nama = TextEditingController(text: m?['nama_mobil_mitra']?.toString() ?? '');
+    _nopol = TextEditingController(text: teks(const ['nopol', 'no_polisi']));
+    _kapasitas = TextEditingController(
+        text: teks(const ['kapasitas', 'kapasitas_penumpang']));
+    _bbm = TextEditingController(text: teks(const ['bbm', 'jenis_bbm']));
+    _harga = TextEditingController(text: teks(const ['price', 'harga']));
+    _deskripsi = TextEditingController(text: teks(const ['deskripsi', 'keterangan']));
+    _idKategori = (m?['id_category_mitra'] as num?)?.toInt().toString();
+    _muatKategori();
   }
 
   @override
   void dispose() {
-    _nama.dispose();
-    _stok.dispose();
+    for (final c in [_merk, _nama, _nopol, _kapasitas, _bbm, _harga, _deskripsi]) {
+      c.dispose();
+    }
     super.dispose();
+  }
+
+  Future<void> _muatKategori() async {
+    final ok = await _katalog.loadCategories();
+    if (!mounted) return;
+    if (!ok) {
+      _pesan(_katalog.errorMessage ?? 'Kategori gagal dimuat');
+    }
+    final ada = _katalog.categories.any(
+      (k) => (k['id_category'] as num).toInt().toString() == _idKategori,
+    );
+    setState(() {
+      if (!ada) _idKategori = null;
+      _kategoriSiap = true;
+    });
+  }
+
+  void _ulangiKategori() {
+    setState(() => _kategoriSiap = false);
+    _muatKategori();
+  }
+
+  void _pesan(String teks) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(teks)));
   }
 
   Future<void> _pilihFoto() async {
@@ -75,45 +100,29 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
     setState(() => _foto = file);
   }
 
-  int? get _kategoriTerpilih => int.tryParse(_idKategori ?? '');
-
-  String? _idKategoriDariNama(String? nama) {
-    if (nama == null || nama.isEmpty || nama == '-') return null;
-    for (final row in _katalog.categories) {
-      if (row['nama']?.toString() == nama) {
-        return _categoryIdOf(row['id_category']);
-      }
-    }
-    return null;
-  }
-
   Future<void> _simpan() async {
+    FocusScope.of(context).unfocus();
     if (!_formKey.currentState!.validate()) return;
-    final stok = int.tryParse(_stok.text.trim());
-    final kategori = _kategoriTerpilih;
-    if (stok == null || stok < 0) {
-      _pesan('Stok harus berupa angka dan tidak negatif');
-      return;
-    }
+
+    final kategori = int.tryParse(_idKategori ?? '');
     if (kategori == null) {
-      _pesan('Pilih kategori mobil dulu');
+      _pesan('Pilih tipe transmisi terlebih dahulu');
       return;
     }
 
     setState(() => _loading = true);
     final bool ok;
-    if (widget.isEdit && widget.mobil != null && widget.mobil!.id > 0) {
+    if (widget.isEdit && widget.mobil != null) {
       ok = await _katalog.updateKatalogMitra(
-        widget.mobil!.id,
+        (widget.mobil!['id_mobil_mitra'] as num).toInt(),
         namaMobilMitra: _nama.text.trim(),
-        totalStockMitra: stok,
         idCategoryMitra: kategori,
         fotoBaru: _foto,
       );
     } else {
       ok = await _katalog.addKatalogMitra(
         namaMobilMitra: _nama.text.trim(),
-        totalStockMitra: stok,
+        totalStockMitra: 1,
         idCategoryMitra: kategori,
         foto: _foto,
       );
@@ -125,109 +134,123 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
       _pesan(_katalog.errorMessage ?? 'Data mobil gagal disimpan');
       return;
     }
-    _pesan(widget.isEdit
-        ? 'Data mobil diperbarui'
-        : 'Mobil berhasil ditambahkan');
+    _pesan(widget.isEdit ? 'Data mobil diperbarui' : 'Mobil berhasil ditambahkan');
     Navigator.pop(context, true);
-  }
-
-  void _pesan(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
   Widget _label(String t) => Padding(
         padding: const EdgeInsets.only(top: 10, bottom: 4),
-        child: Text(t,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-            )),
+        child: Text(
+          t,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       );
 
-  Widget _field(String hint, TextEditingController c,
-      {TextInputType? type}) {
+  Widget _field(
+    String hint,
+    TextEditingController c, {
+    TextInputType? type,
+    List<TextInputFormatter>? formatters,
+    int lines = 1,
+    bool wajib = false,
+  }) {
     return TextFormField(
       controller: c,
       keyboardType: type,
-      style: const TextStyle(color: Colors.white, fontSize: 11),
+      inputFormatters: formatters,
+      maxLines: lines,
+      style: const TextStyle(color: AppColors.textPrimary, fontSize: 11),
       validator: (v) =>
-          v == null || v.trim().isEmpty ? 'Wajib diisi' : null,
+          wajib && (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white54, fontSize: 11),
+        hintStyle:
+            const TextStyle(color: AppColors.textSecondary, fontSize: 11),
         isDense: true,
         filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.08),
+        fillColor: const Color(0x14FFFFFF),
         errorStyle: const TextStyle(fontSize: 10),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+          borderSide: const BorderSide(color: Color(0x4DFFFFFF)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4),
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+          borderSide: const BorderSide(color: Color(0x4DFFFFFF)),
         ),
       ),
     );
   }
 
-  Widget _kategoriDropdown() {
-    final rows = _katalog.categories
-        .where((row) => _categoryIdOf(row['id_category']) != null)
-        .toList();
-    final decoration = BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(4),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-    );
-
-    if (rows.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: decoration,
+  Widget _radio(String id, String nama) => GestureDetector(
+        onTap: () => setState(() => _idKategori = id),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Expanded(
-              child: Text(
-                'Belum ada kategori',
-                style: TextStyle(color: Colors.white54, fontSize: 11),
+            Icon(
+              _idKategori == id
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_off,
+              color: AppColors.textPrimary,
+              size: 14,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              nama,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 11,
               ),
             ),
-            InkWell(
-              onTap: _muat,
-              child: const Icon(Icons.refresh, color: Colors.white70, size: 16),
-            ),
+            const SizedBox(width: 14),
           ],
         ),
       );
-    }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: decoration,
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _idKategori,
-          isExpanded: true,
-          dropdownColor: const Color(0xFF111B2E),
-          hint: const Text('Pilih kategori',
-              style: TextStyle(color: Colors.white54, fontSize: 11)),
-          items: [
-            for (final row in rows)
-              DropdownMenuItem<String>(
-                value: _categoryIdOf(row['id_category'])!,
-                child: Text(
-                  row['nama']?.toString() ?? '-',
-                  style: const TextStyle(color: Colors.white, fontSize: 11),
-                ),
+  Widget _pilihanTransmisi() {
+    if (!_kategoriSiap) {
+      return const SizedBox(
+        width: 14,
+        height: 14,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    if (_katalog.categories.isEmpty) {
+      return Row(
+        children: [
+          const Text(
+            'Kategori kosong atau gagal dimuat',
+            style: TextStyle(color: Color(0xFFEF4444), fontSize: 10),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: _ulangiKategori,
+            child: const Text(
+              'Coba lagi',
+              style: TextStyle(
+                color: Color(0xFF60A5FA),
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
               ),
-          ],
-          onChanged: (v) => setState(() => _idKategori = v),
-        ),
-      ),
+            ),
+          ),
+        ],
+      );
+    }
+    return Wrap(
+      children: [
+        for (final k in _katalog.categories)
+          _radio(
+            (k['id_category'] as num).toInt().toString(),
+            (k['nama'] ?? k['name'])?.toString() ?? '-',
+          ),
+      ],
     );
   }
 
@@ -251,46 +274,81 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
                         child: GestureDetector(
                           onTap: _pilihFoto,
                           child: Container(
-                            width: 90,
-                            height: 60,
-                            padding: const EdgeInsets.all(6),
+                            width: 84,
+                            height: 64,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.08),
+                              color: const Color(0x14FFFFFF),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.3)),
+                              border:
+                                  Border.all(color: const Color(0x4DFFFFFF)),
                             ),
                             child: _foto == null
                                 ? const Icon(
                                     Icons.add_photo_alternate_outlined,
-                                    color: Colors.white,
-                                    size: 24)
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.check_circle_outline,
-                                          color: Color(0xFF4ADE80), size: 20),
-                                      Text(
+                                    color: AppColors.textPrimary,
+                                    size: 28,
+                                  )
+                                : Padding(
+                                    padding: const EdgeInsets.all(6),
+                                    child: Center(
+                                      child: Text(
                                         _foto!.name,
-                                        maxLines: 1,
+                                        maxLines: 3,
                                         overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
                                         style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 8,
+                                          color: AppColors.textPrimary,
+                                          fontSize: 9,
                                         ),
                                       ),
-                                    ],
+                                    ),
                                   ),
                           ),
                         ),
                       ),
-                      _label('Informasi Mobil'),
-                      _field('Nama Mobil', _nama),
+                      _label('Informasi Umum'),
+                      _field('Merk Mobil', _merk),
                       const SizedBox(height: 6),
-                      _field('Total Stok', _stok,
-                          type: TextInputType.number),
-                      _label('Kategori'),
-                      _kategoriDropdown(),
+                      _field('Nama Mobil', _nama, wajib: true),
+                      const SizedBox(height: 6),
+                      _field('Nomor Polisi', _nopol),
+                      _label('Spesifikasi'),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Tipe Transmisi  ',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 11,
+                            ),
+                          ),
+                          Expanded(child: _pilihanTransmisi()),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _field(
+                              'Kapasitas Penumpang',
+                              _kapasitas,
+                              type: TextInputType.number,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(child: _field('Jenis Bahan Bakar', _bbm)),
+                        ],
+                      ),
+                      _label('Harga'),
+                      _field(
+                        'Harga Sewa / Hari',
+                        _harga,
+                        type: TextInputType.number,
+                        formatters: [FilteringTextInputFormatter.digitsOnly],
+                      ),
+                      _label('Deskripsi'),
+                      _field('Deskripsi Tambahan', _deskripsi, lines: 4),
                     ],
                   ),
                 ),

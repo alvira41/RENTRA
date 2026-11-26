@@ -138,8 +138,8 @@ class _ProfileUserViewState extends State<ProfileUserView> {
       width: double.infinity,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0x14FFFFFF),
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0x26FFFFFF),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0x40FFFFFF)),
       ),
       child: const Column(
@@ -158,7 +158,7 @@ class _ProfileUserViewState extends State<ProfileUserView> {
     if (_ktp == null) return kosong;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(14),
       child: Image.network(
         _ktp!,
         height: 150,
@@ -203,8 +203,8 @@ class _ProfileUserViewState extends State<ProfileUserView> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0x14FFFFFF),
-              borderRadius: BorderRadius.circular(8),
+              color: const Color(0x26FFFFFF),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0x40FFFFFF)),
             ),
             child: Column(
@@ -242,14 +242,14 @@ class _ProfileUserViewState extends State<ProfileUserView> {
                   size: 14, color: AppColors.textPrimary),
               label: const Text(
                 'Edit Password',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 10),
               ),
               style: OutlinedButton.styleFrom(
-                backgroundColor: const Color(0x1AFFFFFF),
-                side: const BorderSide(color: Color(0x4DFFFFFF)),
+                backgroundColor: const Color(0x26FFFFFF),
+                side: const BorderSide(color: Color(0x40FFFFFF)),
                 alignment: Alignment.centerLeft,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
             ),
@@ -297,14 +297,14 @@ class _ProfileUserViewState extends State<ProfileUserView> {
                   size: 14, color: Color(0xFFEF4444)),
               label: const Text(
                 'Logout',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 10),
               ),
               style: OutlinedButton.styleFrom(
                 backgroundColor: const Color(0x33EF4444),
                 side: const BorderSide(color: Color(0xFFEF4444)),
                 padding: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
             ),

@@ -121,11 +121,11 @@ class _AktivitasMitraViewState extends State<AktivitasMitraView> {
                     return MitraMobilCard(
                       data: MitraMobilData(
                         nama: 'Supply #$id',
-                        merk: row['mitra']?['nama_rental']?.toString() ?? '-',
-                        nopol: '-',
-                        spesifikasi: '-',
-                        kapasitas: '-',
-                        bbm: '-',
+                        merk: row['mitra']?['nama_rental']?.toString() ?? '',
+                        nopol: '',
+                        spesifikasi: '',
+                        kapasitas: '',
+                        bbm: '',
                         harga: 0,
                         status: _label(status),
                       ),

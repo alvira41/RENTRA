@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/config/supabase_config.dart';
+import '../../core/constants/app_colors.dart';
 import '../widgets/rentra_scaffold.dart';
 
 class EditPasswordView extends StatefulWidget {
@@ -81,28 +82,28 @@ class _EditPasswordViewState extends State<EditPasswordView> {
         controller: controller,
         obscureText: hidden,
         validator: validator,
-        style: const TextStyle(color: Colors.white, fontSize: 12),
+        style: const TextStyle(color: AppColors.textPrimary, fontSize: 12),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: Colors.white, fontSize: 12),
+          hintStyle: const TextStyle(color: AppColors.textPrimary, fontSize: 12),
           isDense: true,
           filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.1),
+          fillColor: AppColors.inputFill,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           errorStyle: const TextStyle(fontSize: 10),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+            borderSide: BorderSide(color: AppColors.inputBorder),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+            borderSide: BorderSide(color: AppColors.inputBorder),
           ),
           suffixIcon: GestureDetector(
             onTap: onToggle,
             child: Icon(hidden ? Icons.visibility_off : Icons.visibility,
-                color: Colors.white, size: 14),
+                color: AppColors.textPrimary, size: 14),
           ),
         ),
       ),
@@ -124,7 +125,7 @@ class _EditPasswordViewState extends State<EditPasswordView> {
               children: [
                 const Text(
                   'Masukkan password lama, lalu buat password baru.',
-                  style: TextStyle(color: Colors.white, fontSize: 11),
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 11),
                 ),
                 const SizedBox(height: 14),
                 _field(
@@ -160,12 +161,11 @@ class _EditPasswordViewState extends State<EditPasswordView> {
                     child: OutlinedButton(
                       onPressed: _loading ? null : _confirm,
                       style: OutlinedButton.styleFrom(
-                        backgroundColor:
-                            const Color(0xFF1E3A8A).withValues(alpha: 0.6),
-                        side: const BorderSide(color: Color(0xFF60A5FA)),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        backgroundColor: const Color(0xFF4F6FB8).withAlpha(50),
+                        side: const BorderSide(color: Color(0xFF4F6FB8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20)),
+                            borderRadius: BorderRadius.circular(16)),
                       ),
                       child: _loading
                           ? const SizedBox(
@@ -174,7 +174,10 @@ class _EditPasswordViewState extends State<EditPasswordView> {
                               child: CircularProgressIndicator(strokeWidth: 1.5))
                           : const Text('Confirm',
                               style:
-                                  TextStyle(color: Colors.white, fontSize: 11)),
+                                  TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600)),
                     ),
                   ),
                 ),

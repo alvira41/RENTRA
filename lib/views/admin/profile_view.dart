@@ -178,19 +178,19 @@ class _ProfileViewState extends State<ProfileView> {
           icon: const Icon(Icons.logout, size: 14, color: Color(0xFFEF4444)),
           label: const Text(
             'Logout',
-            style: TextStyle(color: AppColors.textPrimary, fontSize: 12),
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 10),
           ),
           style: OutlinedButton.styleFrom(
             backgroundColor: const Color(0x33EF4444),
             side: const BorderSide(color: Color(0xFFEF4444)),
             padding: EdgeInsets.zero,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16)),
           ),
         ),
       ),
       child: GlassCard(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+        padding: const EdgeInsets.all(14),
         child: !_siap
             ? const Center(child: CircularProgressIndicator())
             : _auth.role == null
@@ -242,8 +242,8 @@ class _ProfileViewState extends State<ProfileView> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0x14FFFFFF),
-                              borderRadius: BorderRadius.circular(8),
+                              color: const Color(0x26FFFFFF),
+                              borderRadius: BorderRadius.circular(14),
                               border:
                                   Border.all(color: const Color(0x40FFFFFF)),
                             ),
@@ -302,15 +302,15 @@ class _ProfileViewState extends State<ProfileView> {
                             'Edit Password',
                             style: TextStyle(
                               color: AppColors.textPrimary,
-                              fontSize: 12,
+                              fontSize: 10,
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            backgroundColor: const Color(0x1AFFFFFF),
-                            side: const BorderSide(color: Color(0x4DFFFFFF)),
+                            backgroundColor: const Color(0x26FFFFFF),
+                            side: const BorderSide(color: Color(0x40FFFFFF)),
                             alignment: Alignment.centerLeft,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                           ),
                         ),

@@ -112,7 +112,7 @@ class _PembayaranBerhasilViewState extends State<PembayaranBerhasilView> {
                             'Pembayaran Berhasil',
                             style: TextStyle(
                               color: AppColors.textPrimary,
-                              fontSize: 14,
+                              fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -124,7 +124,6 @@ class _PembayaranBerhasilViewState extends State<PembayaranBerhasilView> {
                           ),
                           const SizedBox(height: 18),
                           GlassCard(
-                            radius: 10,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 10),
                             child: Row(
@@ -156,7 +155,6 @@ class _PembayaranBerhasilViewState extends State<PembayaranBerhasilView> {
                           ),
                           const SizedBox(height: 12),
                           GlassCard(
-                            radius: 10,
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 6),
                             child: Column(
@@ -166,7 +164,7 @@ class _PembayaranBerhasilViewState extends State<PembayaranBerhasilView> {
                                   'Status',
                                   Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 1),
+                                        horizontal: 10, vertical: 2),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF4ADE80)
                                           .withAlpha(40),
@@ -178,7 +176,7 @@ class _PembayaranBerhasilViewState extends State<PembayaranBerhasilView> {
                                       'Berhasil',
                                       style: TextStyle(
                                         color: Color(0xFF4ADE80),
-                                        fontSize: 9,
+                                        fontSize: 8,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -199,8 +197,7 @@ class _PembayaranBerhasilViewState extends State<PembayaranBerhasilView> {
                           ),
                           const SizedBox(height: 12),
                           GlassCard(
-                            radius: 10,
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(14),
                             child: Container(
                               width: width * 0.5,
                               padding: const EdgeInsets.all(12),

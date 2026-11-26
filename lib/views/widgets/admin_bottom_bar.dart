@@ -49,15 +49,15 @@ class AdminBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF0E1420),
-        border: Border(top: BorderSide(color: Color(0x1FFFFFFF))),
+        color: Color(0xFF0F1621),
+        border: Border(top: BorderSide(color: Color(0x26FFFFFF))),
       ),
       child: SafeArea(
         top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+        child: SizedBox(
+          height: 62,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(_icons.length, (index) {
               return _NavIcon(
                 icon: _icons[index],
@@ -95,16 +95,16 @@ class _NavIcon extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
-        width: 40,
-        height: 40,
+        width: 42,
+        height: 42,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: active ? const Color(0xFF2A3550) : Colors.transparent,
+          color: active ? const Color(0x33FFFFFF) : Colors.transparent,
         ),
         child: Icon(
           icon,
           size: 22,
-          color: active ? AppColors.textPrimary : AppColors.primary,
+          color: active ? AppColors.textPrimary : AppColors.textSecondary,
         ),
       ),
     );

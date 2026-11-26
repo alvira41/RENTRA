@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../controllers/katalog_controller.dart';
 import '../../controllers/supply_controller.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/controllers/app_controllers.dart';
 import '../widgets/rentra_scaffold.dart';
 
@@ -119,18 +120,19 @@ class _MitraDetailViewState extends State<MitraDetailView> {
                   const Center(
                     child: Text('RENTRA',
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 6,
+                      letterSpacing: 0.3,
                     )),
                   ),
                   const SizedBox(height: 18),
                   Text(_namaRental,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
                       )),
                   const SizedBox(height: 8),
                   _InfoLine('Nama Pemilik',
@@ -146,16 +148,24 @@ class _MitraDetailViewState extends State<MitraDetailView> {
                       icon: const Icon(Icons.local_shipping_outlined, size: 14),
                       label: const Text('Ajukan Supply ke Mitra Ini'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
-                        textStyle: const TextStyle(fontSize: 11),
+                        backgroundColor: const Color(0xFF4F6FB8).withAlpha(50),
+                        foregroundColor: AppColors.textPrimary,
+                        elevation: 0,
+                        side: const BorderSide(color: Color(0xFF4F6FB8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 14),
                   const Text('Mobil Mitra',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       )),
@@ -175,7 +185,7 @@ class _MitraDetailViewState extends State<MitraDetailView> {
                       ),
                   if (!_loading && _mobil.isEmpty)
                     const Text('Belum ada mobil milik mitra ini',
-                        style: TextStyle(color: Colors.white70, fontSize: 10)),
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
                 ],
               );
             },
@@ -215,11 +225,11 @@ class _InfoLine extends StatelessWidget {
           SizedBox(
             width: 80,
             child: Text(label,
-                style: const TextStyle(color: Colors.white, fontSize: 8)),
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 8)),
           ),
           Expanded(
             child: Text(': $value',
-                style: const TextStyle(color: Colors.white70, fontSize: 8)),
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 8)),
           ),
         ],
       ),
@@ -246,17 +256,17 @@ class _MobilCard extends StatelessWidget {
               height: 48,
               child: mobil.image.isEmpty
                   ? Container(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: AppColors.inputFill,
                       child: const Icon(Icons.directions_car,
-                          color: Colors.white70, size: 28),
+                          color: AppColors.textSecondary, size: 28),
                     )
                   : Image.network(
                       mobil.image,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: AppColors.inputFill,
                         child: const Icon(Icons.directions_car,
-                            color: Colors.white70, size: 28),
+                            color: AppColors.textSecondary, size: 28),
                       ),
                     ),
             ),
@@ -268,15 +278,15 @@ class _MobilCard extends StatelessWidget {
               children: [
                 Text(mobil.nama,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                     )),
                 const SizedBox(height: 3),
                 Text('Kategori : ${mobil.kategori}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 8)),
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 8)),
                 Text('Stok : ${mobil.stok}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 8)),
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 8)),
               ],
             ),
           ),

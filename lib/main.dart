@@ -105,7 +105,16 @@ class RentraApp extends StatelessWidget {
         AppRoutes.mitraDashboard: (context) => const DashboardMitraView(),
         AppRoutes.mitraAddCar: (context) => const MitraCarFormView(),
         AppRoutes.mitraSupply: (context) => const KonfirmasiSupplyView(),
-        AppRoutes.mitraProof: (context) => const BuktiMitraView(),
+        AppRoutes.mitraProof: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          final argsMap = args is Map ? args.cast<String, dynamic>() : null;
+          return BuktiMitraView(
+            idSupply: args is int
+                ? args
+                : (argsMap?['id_supply'] as num?)?.toInt(),
+            supply: argsMap,
+          );
+        },
         AppRoutes.mitraActivity: (context) => const AktivitasMitraView(),
         AppRoutes.register: (context) => const RegisterView(),
         AppRoutes.userDashboard: (context) => const DashboardUserView(),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../controllers/katalog_controller.dart';
-import '../../controllers/supply_controller.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/controllers/app_controllers.dart';
 import '../widgets/mitra_mobil_card.dart';
 import '../widgets/mitra_page.dart';
@@ -15,172 +15,169 @@ class DashboardMitraView extends StatefulWidget {
 
 class _DashboardMitraViewState extends State<DashboardMitraView> {
   late final KatalogController _katalog;
-  late final SupplyController _supply;
-  late final String? _idMitra;
-  bool _loading = true;
+  bool _siap = false;
 
   @override
   void initState() {
     super.initState();
-    final controllers = AppControllers.of(context);
-    _katalog = controllers.katalog;
-    _supply = controllers.supply;
-    _idMitra = controllers.auth.idMitra;
+    _katalog = AppControllers.of(context).katalog;
     _muat();
   }
 
   Future<void> _muat() async {
-    await Future.wait([
-      _katalog.loadKatalogMitra(),
-      _supply.loadSupplies(idMitra: _idMitra),
-    ]);
+    final okKategori = await _katalog.loadCategories();
+    final errKategori = _katalog.errorMessage;
+    final okMobil = await _katalog.loadKatalogMitra();
+    final errMobil = _katalog.errorMessage;
     if (!mounted) return;
-    setState(() => _loading = false);
+    if (!okMobil) {
+      _pesan(errMobil ?? 'Data mobil gagal dimuat');
+    } else if (!okKategori) {
+      _pesan(errKategori ?? 'Kategori gagal dimuat');
+    }
+    setState(() => _siap = true);
   }
 
-  List<MitraMobilData> get _mobil => _katalog.katalogMitra
-      .map((row) => MitraMobilData.fromKatalogMitra(row))
-      .toList();
-
-  Future<void> _tambah() async {
-    final ok = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(builder: (_) => const MitraCarFormView()),
-    );
-    if (ok == true) _muat();
+  void _pesan(String teks) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(teks)));
   }
 
-  Future<void> _edit(MitraMobilData mobil) async {
-    final ok = await Navigator.push<bool>(
+  MitraMobilData _tampilan(Map<String, dynamic> row) =>
+      MitraMobilData.fromKatalogMitra(row);
+
+  Future<void> _edit(Map<String, dynamic> row) async {
+    final diubah = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => MitraCarFormView(isEdit: true, mobil: mobil),
+        builder: (_) => MitraCarFormView(isEdit: true, mobil: row),
       ),
     );
-    if (ok == true) _muat();
+    if (diubah == true && mounted) _muat();
   }
 
-  Future<void> _hapus(MitraMobilData mobil) async {
+  Future<void> _hapus(Map<String, dynamic> row) async {
+    final nama = row['nama_mobil_mitra']?.toString() ?? 'mobil ini';
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Hapus Mobil'),
-        content: Text('Hapus ${mobil.nama}?'),
+      barrierColor: Colors.black54,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF0F1621),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: Color(0x26FFFFFF)),
+        ),
+        title: const Text(
+          'Hapus mobil?',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Text(
+          'Data $nama akan dihapus.',
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 11,
+          ),
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text(
+              'Hapus',
+              style: TextStyle(color: Color(0xFFEF4444)),
+            ),
           ),
         ],
       ),
     );
     if (ok != true || !mounted) return;
-    final sukses = await _katalog.deleteKatalogMitra(mobil.id);
-    if (!mounted) return;
-    _pesan(sukses
-        ? 'Mobil dihapus'
-        : _katalog.errorMessage ?? 'Mobil gagal dihapus');
-  }
 
-  void _pesan(String text) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    final berhasil = await _katalog
+        .deleteKatalogMitra((row['id_mobil_mitra'] as num).toInt());
+    if (!mounted) return;
+    _pesan(berhasil
+        ? 'Mobil dihapus'
+        : (_katalog.errorMessage ?? 'Gagal menghapus mobil'));
   }
 
   @override
   Widget build(BuildContext context) {
-    final pending = _supply.supplies
-        .where((s) => s['status'] == 'pending')
-        .length;
-
     return MitraPage(
       title: 'DASHBOARD MITRA',
       navIndex: 0,
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0x26FFFFFF),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0x40FFFFFF)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.local_shipping_outlined,
-                    color: Colors.white70, size: 18),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    '$pending supply menunggu konfirmasi',
-                    style: const TextStyle(color: Colors.white, fontSize: 11),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _tambah,
-              icon: const Icon(Icons.add, size: 14),
-              label: const Text('Tambah Mobil'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
-                foregroundColor: Colors.white,
-                textStyle: const TextStyle(fontSize: 11),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: ListenableBuilder(
-              listenable: _katalog,
-              builder: (context, _) {
-                final mobil = _mobil;
-                if (_loading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (mobil.isEmpty) {
-                  return const Center(
-                    child: Text('Belum ada mobil',
-                        style:
-                            TextStyle(color: Colors.white70, fontSize: 11)),
-                  );
-                }
-                return ListView.separated(
-                  itemCount: mobil.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) => MitraMobilCard(
-                    data: mobil[i],
-                    actions: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        SmallButton(
-                          label: 'Edit',
-                          icon: Icons.edit,
-                          onTap: () => _edit(mobil[i]),
-                        ),
-                        const SizedBox(width: 6),
-                        SmallButton(
-                          label: 'Hapus',
-                          icon: Icons.delete_outline,
-                          color: const Color(0xFFEF4444),
-                          onTap: () => _hapus(mobil[i]),
-                        ),
-                      ],
+      child: ListenableBuilder(
+        listenable: _katalog,
+        builder: (context, _) {
+          if (!_siap) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final data = _katalog.katalogMitra;
+          if (data.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Belum ada mobil',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
                     ),
+                  ),
+                  const SizedBox(height: 10),
+                  SmallButton(
+                    label: 'Muat ulang',
+                    icon: Icons.refresh,
+                    onTap: () {
+                      setState(() => _siap = false);
+                      _muat();
+                    },
+                  ),
+                ],
+              ),
+            );
+          }
+          return RefreshIndicator(
+            onRefresh: _muat,
+            child: ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: data.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 10),
+              itemBuilder: (context, index) {
+                final row = data[index];
+                return MitraMobilCard(
+                  data: _tampilan(row),
+                  actions: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      SmallButton(
+                        label: 'Edit',
+                        icon: Icons.edit,
+                        onTap: () => _edit(row),
+                      ),
+                      const SizedBox(width: 6),
+                      SmallButton(
+                        label: 'Hapus',
+                        icon: Icons.delete_outline,
+                        color: const Color(0xFFEF4444),
+                        onTap: () => _hapus(row),
+                      ),
+                    ],
                   ),
                 );
               },
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

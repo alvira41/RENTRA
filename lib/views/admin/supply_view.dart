@@ -108,8 +108,9 @@ class _SupplyViewState extends State<SupplyView> {
                     'Mitra',
                     style: TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
                     ),
                   ),
                 ),
@@ -127,18 +128,22 @@ class _SupplyViewState extends State<SupplyView> {
                     width: double.infinity,
                     height: 34,
                     child: ElevatedButton(
-                      onPressed: () =>
-                          Navigator.of(context).pushNamed(AppRoutes.adminAddMitra),
+                      onPressed: () async {
+                        final hasil = await Navigator.of(context)
+                            .pushNamed(AppRoutes.adminAddMitra);
+                        if (hasil == true && mounted) _muat();
+                      },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD3D6E0),
-                        foregroundColor: AppColors.buttonText,
+                        backgroundColor: const Color(0xFF4F6FB8).withAlpha(50),
+                        foregroundColor: AppColors.textPrimary,
                         elevation: 0,
+                        side: const BorderSide(color: Color(0xFF4F6FB8)),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                         textStyle: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       child: const Text('Tambah Mitra'),
@@ -174,10 +179,13 @@ class _SupplyViewState extends State<SupplyView> {
                                 final item = data[index];
                                 return _MitraRow(
                                   item: item,
-                                  onTap: () => Navigator.of(context).pushNamed(
-                                    AppRoutes.adminMitraDetail,
-                                    arguments: item.id,
-                                  ),
+                                  onTap: () async {
+                                    await Navigator.of(context).pushNamed(
+                                      AppRoutes.adminMitraDetail,
+                                      arguments: item.id,
+                                    );
+                                    if (mounted) _muat();
+                                  },
                                 );
                               },
                             );
@@ -206,7 +214,7 @@ class _SummaryCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: const Color(0x26FFFFFF),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0x40FFFFFF)),
       ),
       child: Row(
@@ -273,7 +281,7 @@ class _MitraRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
           color: const Color(0x26FFFFFF),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0x40FFFFFF)),
         ),
         child: Row(

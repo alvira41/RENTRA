@@ -28,7 +28,7 @@ class _DashboardUserViewState extends State<DashboardUserView> {
 
   List<MitraMobilData> get _tampil => _filter == 'Semua'
       ? _mobil
-      : _mobil.where((m) => m.merk == _filter).toList();
+      : _mobil.where((m) => m.kategori == _filter).toList();
 
   @override
   void initState() {
@@ -136,10 +136,10 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 5),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFD1D5DB) : const Color(0x33FFFFFF),
-          borderRadius: BorderRadius.circular(14),
+          color: selected ? AppColors.button : const Color(0x26FFFFFF),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? const Color(0xFFD1D5DB) : const Color(0x66FFFFFF),
+            color: selected ? AppColors.button : const Color(0x40FFFFFF),
           ),
         ),
         child: Text(
@@ -194,7 +194,7 @@ class _UserCarCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: AspectRatio(
                     aspectRatio: 1.5,
-                      child: mobil.deskripsi.isEmpty
+                      child: (mobil.foto == null || mobil.foto!.isEmpty)
                           ? Image.asset(
                               'assets/images/car1.png',
                               fit: BoxFit.cover,
@@ -202,10 +202,15 @@ class _UserCarCard extends StatelessWidget {
                                   Container(color: const Color(0xFF1F2937)),
                             )
                           : Image.network(
-                              mobil.deskripsi,
+                              mobil.foto!,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) =>
-                                  Container(color: const Color(0xFF1F2937)),
+                                  Image.asset(
+                                'assets/images/car1.png',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(color: const Color(0xFF1F2937)),
+                              ),
                             ),
                   ),
                 ),
@@ -218,18 +223,19 @@ class _UserCarCard extends StatelessWidget {
                     opacity: onPesan == null ? 0.4 : 1,
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: const Color(0x26FFFFFF),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0x80FFFFFF)),
+                        color: const Color(0xFF4F6FB8).withAlpha(50),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFF4F6FB8)),
                       ),
                       child: const Text(
                         'Pesan',
                         style: TextStyle(
                           color: AppColors.textPrimary,
-                          fontSize: 9,
+                          fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -255,7 +261,8 @@ class _UserCarCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                _line('Kategori', mobil.merk),
+                if (mobil.kategori.isNotEmpty)
+                  _line('Kategori', mobil.kategori),
                 _line('Stok', '${mobil.stok}'),
                 const SizedBox(height: 4),
                 const Text(

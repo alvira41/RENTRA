@@ -62,7 +62,9 @@ class _ActivityViewState extends State<ActivityView> {
     ]);
     if (!hasil.every((e) => e) && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_order.errorMessage ?? 'Gagal memuat aktivitas')),
+        SnackBar(
+          content: Text(_order.errorMessage ?? 'Gagal memuat aktivitas'),
+        ),
       );
     }
   }
@@ -75,7 +77,9 @@ class _ActivityViewState extends State<ActivityView> {
     final katalog = (detail['katalog'] as Map?)?.cast<String, dynamic>();
     final user = (row['user'] as Map?)?.cast<String, dynamic>();
     final mulai = DateTime.tryParse(detail['tanggal_pinjam']?.toString() ?? '');
-    final kembali = DateTime.tryParse(detail['tanggal_kembali']?.toString() ?? '');
+    final kembali = DateTime.tryParse(
+      detail['tanggal_kembali']?.toString() ?? '',
+    );
 
     num denda = 0;
     for (final d in details) {
@@ -136,122 +140,124 @@ class _ActivityViewState extends State<ActivityView> {
               ),
             ),
           ),
-          SafeArea(
-            bottom: false,
-            child: ListenableBuilder(
-              listenable: _order,
-              builder: (context, _) {
-                final items = _items;
-                return SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(
-                    sidePadding,
-                    16,
-                    sidePadding,
-                    16,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Image.asset(
-                        'assets/images/logo.png',
-                        width: width * 0.3,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'AKTIVITAS',
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
+          Positioned.fill(
+            child: SafeArea(
+              bottom: false,
+              child: ListenableBuilder(
+                listenable: _order,
+                builder: (context, _) {
+                  final items = _items;
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      sidePadding,
+                      16,
+                      sidePadding,
+                      16,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Image.asset(
+                          'assets/images/logo.png',
+                          width: width * 0.3,
+                          fit: BoxFit.contain,
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.account_balance_wallet_outlined,
-                              label: 'Pendapatan',
-                              value: Formatter.rupiah(
-                                _order.stats['total_pendapatan'] as num?,
+                        const SizedBox(height: 18),
+                        const Text(
+                          'AKTIVITAS',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatCard(
+                                icon: Icons.account_balance_wallet_outlined,
+                                label: 'Pendapatan',
+                                value: Formatter.rupiah(
+                                  _order.stats['total_pendapatan'] as num?,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.calendar_today_outlined,
-                              label: 'Tanggal',
-                              value: _today(),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.directions_car_outlined,
-                              label: 'Total Mobil',
-                              value: _angka('total_mobil'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _StatCard(
-                              icon: Icons.key_outlined,
-                              label: 'Sewa Aktif',
-                              value: _angka('order_ongoing'),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Denda tercatat: ${_order.dendaList.length}',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 9,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (_order.isLoading && items.isEmpty)
-                        const Center(child: CircularProgressIndicator())
-                      else if (items.isEmpty)
-                        const Center(
-                          child: Text(
-                            'Belum ada aktivitas',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        )
-                      else
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: items.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final item = items[index];
-                            return _ActivityCard(
-                              item: item,
-                              onProof: () => Navigator.of(context).pushNamed(
-                                AppRoutes.adminPaymentProof,
-                                arguments: item.idOrder,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _StatCard(
+                                icon: Icons.calendar_today_outlined,
+                                label: 'Tanggal',
+                                value: _today(),
                               ),
-                            );
-                          },
+                            ),
+                          ],
                         ),
-                    ],
-                  ),
-                );
-              },
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _StatCard(
+                                icon: Icons.directions_car_outlined,
+                                label: 'Total Mobil',
+                                value: _angka('total_mobil'),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _StatCard(
+                                icon: Icons.key_outlined,
+                                label: 'Sewa Aktif',
+                                value: _angka('order_ongoing'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Denda tercatat: ${_order.dendaList.length}',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 9,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (_order.isLoading && items.isEmpty)
+                          const Center(child: CircularProgressIndicator())
+                        else if (items.isEmpty)
+                          const Center(
+                            child: Text(
+                              'Belum ada aktivitas',
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          )
+                        else
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: items.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final item = items[index];
+                              return _ActivityCard(
+                                item: item,
+                                onProof: () => Navigator.of(context).pushNamed(
+                                  AppRoutes.adminPaymentProof,
+                                  arguments: item.idOrder,
+                                ),
+                              );
+                            },
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -480,7 +486,7 @@ class _Chip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: color.withAlpha(40),

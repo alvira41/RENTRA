@@ -270,8 +270,8 @@ class _CheckoutViewState extends State<CheckoutView> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           color: const Color(0x26FFFFFF),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: const Color(0x80FFFFFF)),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0x40FFFFFF)),
         ),
         child: Row(
           children: [
@@ -335,16 +335,18 @@ class _CheckoutViewState extends State<CheckoutView> {
 
   Widget _ringkasMobil() {
     final m = widget.mobil;
-    Widget baris(String t) => Text(
-          t,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-              color: AppColors.textPrimary, fontSize: 9, height: 1.4),
-        );
+    Widget baris(String t) {
+      final isi = t.split(':').skip(1).join(':').trim();
+      if (isi.isEmpty || isi == '-') return const SizedBox.shrink();
+      return Text(
+        t,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+            color: AppColors.textPrimary, fontSize: 9, height: 1.4),
+      );
+    }
     return GlassCard(
-      radius: 6,
-      padding: const EdgeInsets.all(8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -353,12 +355,24 @@ class _CheckoutViewState extends State<CheckoutView> {
             child: SizedBox(
               width: 80,
               height: 56,
-              child: Image.asset(
-                'assets/images/car1.png',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    Container(color: const Color(0xFF1F2937)),
-              ),
+              child: (widget.mobil.foto == null ||
+                      widget.mobil.foto!.isEmpty)
+                  ? Image.asset(
+                      'assets/images/car1.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          Container(color: const Color(0xFF1F2937)),
+                    )
+                  : Image.network(
+                      widget.mobil.foto!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Image.asset(
+                        'assets/images/car1.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Container(color: const Color(0xFF1F2937)),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 10),
@@ -433,8 +447,6 @@ class _CheckoutViewState extends State<CheckoutView> {
                     _rowTanggal('Tanggal Kembali:', false),
                     const SizedBox(height: 14),
                     GlassCard(
-                      radius: 6,
-                      padding: const EdgeInsets.all(10),
                       child: Column(
                         children: [
                           _baris(
@@ -454,7 +466,7 @@ class _CheckoutViewState extends State<CheckoutView> {
                             horizontal: 10, vertical: 10),
                         decoration: BoxDecoration(
                           color: const Color(0x26FFFFFF),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: _bukti != null
                                 ? const Color(0xFF4ADE80)

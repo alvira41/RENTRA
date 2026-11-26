@@ -69,7 +69,7 @@ class _PaymentViewState extends State<PaymentView> {
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           child: SizedBox(
                             width: width * 0.5,
@@ -88,7 +88,7 @@ class _PaymentViewState extends State<PaymentView> {
                           'Upload Bukti Pembayaran',
                           style: TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -100,7 +100,7 @@ class _PaymentViewState extends State<PaymentView> {
                             height: 120,
                             decoration: BoxDecoration(
                               color: const Color(0x26FFFFFF),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color: _bukti != null
                                     ? const Color(0xFF4ADE80)

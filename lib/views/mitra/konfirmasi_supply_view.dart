@@ -49,7 +49,9 @@ class _KonfirmasiSupplyViewState extends State<KonfirmasiSupplyView> {
     }
   }
 
-  List<_Permintaan> get _data => _supply.supplies.map((row) {
+  List<_Permintaan> get _data => _supply.supplies
+      .where((row) => row['status']?.toString() == 'pending')
+      .map((row) {
         final kembali = row['tanggal_kembali']?.toString();
         return _Permintaan(
           id: (row['id_supply'] as num?)?.toInt() ?? 0,
@@ -118,11 +120,11 @@ class _KonfirmasiSupplyViewState extends State<KonfirmasiSupplyView> {
               return MitraMobilCard(
                 data: MitraMobilData(
                   nama: 'Supply #${d.id}',
-                  merk: '-',
-                  nopol: '-',
-                  spesifikasi: '-',
-                  kapasitas: '-',
-                  bbm: '-',
+                  merk: '',
+                  nopol: '',
+                  spesifikasi: '',
+                  kapasitas: '',
+                  bbm: '',
                   harga: 0,
                   status: d.status == 'pending' ? 'Menunggu' : d.status,
                 ),
