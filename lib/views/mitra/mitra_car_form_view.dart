@@ -36,9 +36,26 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
     _muat();
   }
 
+  String? _categoryIdOf(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toInt().toString();
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
   Future<void> _muat() async {
     await _katalog.loadCategories();
     if (!mounted) return;
+    if (widget.isEdit && widget.mobil != null && _idKategori == null) {
+      _idKategori = _idKategoriDariNama(widget.mobil!.merk);
+    }
+    final ids = _katalog.categories
+        .map(_categoryIdOf)
+        .whereType<String>()
+        .toList();
+    if (_idKategori != null && !ids.contains(_idKategori)) {
+      _idKategori = null;
+    }
     setState(() {});
   }
 
@@ -55,14 +72,13 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
     setState(() => _foto = file);
   }
 
-  int? get _kategoriTerpilih =>
-      int.tryParse(_idKategori ?? '') ?? _kategoriDariNama(widget.mobil?.merk);
+  int? get _kategoriTerpilih => int.tryParse(_idKategori ?? '');
 
-  int? _kategoriDariNama(String? nama) {
+  String? _idKategoriDariNama(String? nama) {
     if (nama == null || nama.isEmpty || nama == '-') return null;
     for (final row in _katalog.categories) {
       if (row['nama']?.toString() == nama) {
-        return (row['id_category'] as num?)?.toInt();
+        return _categoryIdOf(row['id_category']);
       }
     }
     return null;
@@ -155,6 +171,63 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
     );
   }
 
+  Widget _kategoriDropdown() {
+    final rows = _katalog.categories
+        .where((row) => _categoryIdOf(row['id_category']) != null)
+        .toList();
+    final decoration = BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(4),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+    );
+
+    if (rows.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: decoration,
+        child: Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Belum ada kategori',
+                style: TextStyle(color: Colors.white54, fontSize: 11),
+              ),
+            ),
+            InkWell(
+              onTap: _muat,
+              child: const Icon(Icons.refresh, color: Colors.white70, size: 16),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: decoration,
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _idKategori,
+          isExpanded: true,
+          dropdownColor: const Color(0xFF111B2E),
+          hint: const Text('Pilih kategori',
+              style: TextStyle(color: Colors.white54, fontSize: 11)),
+          items: [
+            for (final row in rows)
+              DropdownMenuItem<String>(
+                value: _categoryIdOf(row['id_category'])!,
+                child: Text(
+                  row['nama']?.toString() ?? '-',
+                  style: const TextStyle(color: Colors.white, fontSize: 11),
+                ),
+              ),
+          ],
+          onChanged: (v) => setState(() => _idKategori = v),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MitraPage(
@@ -214,42 +287,7 @@ class _MitraCarFormViewState extends State<MitraCarFormView> {
                       _field('Total Stok', _stok,
                           type: TextInputType.number),
                       _label('Kategori'),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(4),
-                          border:
-                              Border.all(color: Colors.white.withValues(alpha: 0.3)),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _kategoriTerpilih?.toString(),
-                            isExpanded: true,
-                            dropdownColor: const Color(0xFF111B2E),
-                            hint: const Text('Pilih kategori',
-                                style: TextStyle(
-                                    color: Colors.white54, fontSize: 11)),
-                            items: [
-                              for (final row in _katalog.categories)
-                                DropdownMenuItem<String>(
-                                  value: (row['id_category'] as num)
-                                      .toInt()
-                                      .toString(),
-                                  child: Text(
-                                    row['nama']?.toString() ?? '-',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                            onChanged: (v) =>
-                                setState(() => _idKategori = v),
-                          ),
-                        ),
-                      ),
+                      _kategoriDropdown(),
                     ],
                   ),
                 ),

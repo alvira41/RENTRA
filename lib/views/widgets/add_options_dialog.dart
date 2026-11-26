@@ -52,8 +52,14 @@ class _AddOptionsDialogState extends State<_AddOptionsDialog> {
 
   void _save() {
     final value = _controller.text.trim();
-    if (value.isEmpty) return;
-    Navigator.of(context).pop(_AddResult(dendaAmount: value));
+    final denda = int.tryParse(value);
+    if (denda == null || denda <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nominal denda harus angka lebih dari 0')),
+      );
+      return;
+    }
+    Navigator.of(context).pop(_AddResult(dendaAmount: denda.toString()));
   }
 
   Widget _buildOpsi() {
@@ -98,8 +104,11 @@ class _AddOptionsDialogState extends State<_AddOptionsDialog> {
         const SizedBox(height: 12),
         TextField(
           controller: _controller,
+          autofocus: true,
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _save(),
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: AppColors.buttonText,
@@ -107,8 +116,14 @@ class _AddOptionsDialogState extends State<_AddOptionsDialog> {
             fontWeight: FontWeight.w700,
           ),
           decoration: const InputDecoration(
-            hintText: 'Atur Denda',
+            hintText: '0',
             hintStyle: TextStyle(
+              color: AppColors.buttonText,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+            prefixText: 'Rp ',
+            prefixStyle: TextStyle(
               color: AppColors.buttonText,
               fontSize: 13,
               fontWeight: FontWeight.w700,

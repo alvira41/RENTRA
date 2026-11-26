@@ -38,6 +38,13 @@ class _CarFormViewState extends State<CarFormView> {
     _muat();
   }
 
+  String? _categoryIdOf(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toInt().toString();
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
   Future<void> _muat() async {
     await _katalog.loadCategories();
     if (widget.isEdit && widget.idMobil != null) {
@@ -46,7 +53,14 @@ class _CarFormViewState extends State<CarFormView> {
       _namaController.text = mobil['nama_mobil']?.toString() ?? '';
       _priceController.text = (mobil['price'] as num?)?.toString() ?? '';
       _stokController.text = (mobil['total_stock'] as num?)?.toString() ?? '1';
-      _idKategori = (mobil['id_category'] as num?)?.toInt().toString();
+      _idKategori = _categoryIdOf(mobil['id_category']);
+    }
+    final ids = _katalog.categories
+        .map(_categoryIdOf)
+        .whereType<String>()
+        .toList();
+    if (_idKategori != null && !ids.contains(_idKategori)) {
+      _idKategori = null;
     }
     if (mounted) setState(() {});
   }
@@ -126,6 +140,9 @@ class _CarFormViewState extends State<CarFormView> {
     final width = MediaQuery.of(context).size.width;
     final sidePadding = width * 0.07;
     final uploadWidth = width * 0.42;
+    final kategoriRows = _katalog.categories
+        .where((k) => _categoryIdOf(k['id_category']) != null)
+        .toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -208,15 +225,16 @@ class _CarFormViewState extends State<CarFormView> {
                     child: _DropdownBox(
                       value: _idKategori,
                       items: [
-                        for (final k in _katalog.categories)
-                          (k['id_category'] as num).toInt().toString(),
+                        for (final k in kategoriRows)
+                          _categoryIdOf(k['id_category'])!,
                       ],
                       labels: {
-                        for (final k in _katalog.categories)
-                          (k['id_category'] as num).toInt().toString():
+                        for (final k in kategoriRows)
+                          _categoryIdOf(k['id_category'])!:
                               k['nama']?.toString() ?? '-',
                       },
                       onChanged: (v) => setState(() => _idKategori = v),
+                      onRefresh: _muat,
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -391,26 +409,69 @@ class _DropdownBox extends StatelessWidget {
     required this.items,
     required this.onChanged,
     this.labels,
+    this.onRefresh,
   });
 
   final String? value;
   final List<String> items;
   final Map<String, String>? labels;
   final ValueChanged<String?> onChanged;
+  final Future<void> Function()? onRefresh;
 
   @override
   Widget build(BuildContext context) {
+    final decoration = BoxDecoration(
+      color: const Color(0xFFD3D6E0),
+      borderRadius: BorderRadius.circular(6),
+    );
+
+    if (items.isEmpty) {
+      return Container(
+        height: 38,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: decoration,
+        child: Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Belum ada kategori',
+                style: TextStyle(
+                  color: AppColors.buttonText,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (onRefresh != null)
+              InkWell(
+                onTap: () => onRefresh!(),
+                child: const Icon(
+                  Icons.refresh,
+                  color: AppColors.buttonText,
+                  size: 16,
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       height: 38,
       padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFD3D6E0),
-        borderRadius: BorderRadius.circular(6),
-      ),
+      decoration: decoration,
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
+          hint: const Text(
+            'Pilih kategori',
+            style: TextStyle(
+              color: AppColors.buttonText,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           dropdownColor: const Color(0xFFD3D6E0),
           icon: const Icon(
             Icons.keyboard_arrow_down_rounded,
