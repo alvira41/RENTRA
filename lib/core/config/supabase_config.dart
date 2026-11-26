@@ -8,8 +8,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseConfig {
   static const String _configAsset = 'assets/config/supabase.json';
 
-  static String url = String.fromEnvironment('SUPABASE_URL');
-  static String anonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  static String url = const String.fromEnvironment('SUPABASE_URL');
+  static String anonKey = const String.fromEnvironment('SUPABASE_ANON_KEY');
 
   /// Panggil sekali di main() sebelum runApp().
   static Future<void> init() async {

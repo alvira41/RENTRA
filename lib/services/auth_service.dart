@@ -1,3 +1,4 @@
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/config/supabase_config.dart';
 
@@ -7,34 +8,62 @@ class AppRole {
   static const mitra = 'mitra';
 }
 
-/// Akses Supabase untuk autentikasi. Tidak menyimpan state.
+/// Akses Supabase untuk autentikasi.
+/// Tidak menyimpan state login secara manual.
 class AuthService {
   SupabaseClient get _db => SupabaseConfig.client;
 
+  // ==========================================
+  // AUTHENTICATION
+  // ==========================================
+
   User? get currentUser => _db.auth.currentUser;
+
   String? get currentUid => currentUser?.id;
+
   bool get isLoggedIn => _db.auth.currentSession != null;
 
-  Future<AuthResponse> signIn({required String email, required String password}) =>
-      _db.auth.signInWithPassword(email: email.trim(), password: password);
+  /// Login menggunakan email dan password.
+  Future<AuthResponse> signIn({
+    required String email,
+    required String password,
+  }) async {
+    return await _db.auth.signInWithPassword(
+      email: email.trim(),
+      password: password,
+    );
+  }
 
-  /// Daftar sebagai user. Data profil dikirim sebagai metadata, lalu disimpan
-  /// ke tabel profil lewat [saveProfileAfterSignUp] (atau trigger jika sudah ada).
+  /// Logout akun.
+  Future<void> signOut() async {
+    await _db.auth.signOut();
+  }
+
+  // ==========================================
+  // REGISTER USER
+  // ==========================================
+
   Future<AuthResponse> signUpUser({
     required String email,
     required String password,
     required String namaUser,
     String? jenisKelamin,
-    String? tanggalLahir, // 'yyyy-MM-dd'
+    String? tanggalLahir,
     String? alamat,
     String? noTeleponUser,
     String? noKtp,
   }) async {
-    final res = await _db.auth.signUp(email: email.trim(), password: password, data: {
-      'role': AppRole.user,
-      'nama_user': namaUser.trim(),
-    });
+    final res = await _db.auth.signUp(
+      email: email.trim(),
+      password: password,
+      data: {
+        'role': AppRole.user,
+        'nama_user': namaUser.trim(),
+      },
+    );
+
     final uid = res.user?.id;
+
     if (uid != null && res.session != null) {
       await _db.from(Db.tUser).upsert({
         Db.pkUser: uid,
@@ -46,8 +75,13 @@ class AuthService {
         if (noKtp != null && noKtp.isNotEmpty) 'no_ktp': noKtp,
       });
     }
+
     return res;
   }
+
+  // ==========================================
+  // REGISTER MITRA
+  // ==========================================
 
   Future<AuthResponse> signUpMitra({
     required String email,
@@ -57,11 +91,17 @@ class AuthService {
     String? alamat,
     String? noTelepon,
   }) async {
-    final res = await _db.auth.signUp(email: email.trim(), password: password, data: {
-      'role': AppRole.mitra,
-      'nama_rental': namaRental.trim(),
-    });
+    final res = await _db.auth.signUp(
+      email: email.trim(),
+      password: password,
+      data: {
+        'role': AppRole.mitra,
+        'nama_rental': namaRental.trim(),
+      },
+    );
+
     final uid = res.user?.id;
+
     if (uid != null && res.session != null) {
       await _db.from(Db.tMitra).upsert({
         Db.pkMitra: uid,
@@ -72,44 +112,121 @@ class AuthService {
         if (noTelepon != null) 'no_telepon': noTelepon,
       });
     }
+
     return res;
   }
 
-  Future<void> signOut() => _db.auth.signOut();
+  // ==========================================
+  // GET ROLE
+  // ==========================================
 
-  /// Role akun yang login, atau null jika belum punya profil.
+  /// Mengambil role berdasarkan UUID Supabase Auth.
   Future<String?> getRole() async {
     final uid = currentUid;
+
     if (uid == null) return null;
-    if (await _db.from(Db.tAdmin).select(Db.pkAdmin).eq(Db.pkAdmin, uid).maybeSingle() != null) {
+
+    // ADMIN:
+    // UUID Supabase Auth dicocokkan dengan auth_user_id,
+    // BUKAN id_admin yang bertipe BIGINT.
+
+    final admin = await _db
+        .from(Db.tAdmin)
+        .select('auth_user_id')
+        .eq('auth_user_id', uid)
+        .maybeSingle();
+
+    if (admin != null) {
       return AppRole.admin;
     }
-    if (await _db.from(Db.tMitra).select(Db.pkMitra).eq(Db.pkMitra, uid).maybeSingle() != null) {
+
+    // MITRA:
+    // Menggunakan primary key sesuai konfigurasi Db.
+    final mitra = await _db
+        .from(Db.tMitra)
+        .select(Db.pkMitra)
+        .eq(Db.pkMitra, uid)
+        .maybeSingle();
+
+    if (mitra != null) {
       return AppRole.mitra;
     }
-    if (await _db.from(Db.tUser).select(Db.pkUser).eq(Db.pkUser, uid).maybeSingle() != null) {
+
+    // USER:
+    // Menggunakan primary key sesuai konfigurasi Db.
+    final user = await _db
+        .from(Db.tUser)
+        .select(Db.pkUser)
+        .eq(Db.pkUser, uid)
+        .maybeSingle();
+
+    if (user != null) {
       return AppRole.user;
     }
+
     return null;
   }
 
-  (String, String) _tablePk(String role) => switch (role) {
-        AppRole.admin => (Db.tAdmin, Db.pkAdmin),
-        AppRole.mitra => (Db.tMitra, Db.pkMitra),
-        _ => (Db.tUser, Db.pkUser),
-      };
+  // ==========================================
+  // TABLE AND PRIMARY KEY
+  // ==========================================
+
+  /// Menentukan tabel dan kolom penghubung berdasarkan role.
+  (String, String) _tablePk(String role) {
+    switch (role) {
+      case AppRole.admin:
+        return (Db.tAdmin, 'auth_user_id');
+
+      case AppRole.mitra:
+        return (Db.tMitra, Db.pkMitra);
+
+      case AppRole.user:
+        return (Db.tUser, Db.pkUser);
+
+      default:
+        throw Exception('Role tidak dikenali: $role');
+    }
+  }
+
+  // ==========================================
+  // GET PROFILE
+  // ==========================================
 
   Future<Map<String, dynamic>?> getProfile(String role) async {
     final uid = currentUid;
+
     if (uid == null) return null;
+
     final (table, pk) = _tablePk(role);
-    return _db.from(table).select().eq(pk, uid).maybeSingle();
+
+    final profile = await _db
+        .from(table)
+        .select()
+        .eq(pk, uid)
+        .maybeSingle();
+
+    return profile;
   }
 
-  Future<void> updateProfile(String role, Map<String, dynamic> data) async {
+  // ==========================================
+  // UPDATE PROFILE
+  // ==========================================
+
+  Future<void> updateProfile(
+    String role,
+    Map<String, dynamic> data,
+  ) async {
     final uid = currentUid;
-    if (uid == null) return;
+
+    if (uid == null) {
+      throw Exception('User belum login');
+    }
+
     final (table, pk) = _tablePk(role);
-    await _db.from(table).update(data).eq(pk, uid);
+
+    await _db
+        .from(table)
+        .update(data)
+        .eq(pk, uid);
   }
 }
