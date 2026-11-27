@@ -5,6 +5,31 @@ import '../../core/routes/app_routes.dart';
 class LandingView extends StatelessWidget {
   const LandingView({super.key});
 
+  /// logo.png berukuran 500x500, tapi isinya hanya di Y 212..288.
+  /// Padding transparan bawah (211px) bikin tagline ikut turun jika
+  /// gambar dirender apa adanya. Potong saat render saja.
+  Widget _logoTanpaPadding(double lebar) {
+    const asli = 500.0;
+    const atas = 212.0;
+    const tinggiIsi = 76.0;
+    final skala = lebar / asli;
+
+    return SizedBox(
+      width: lebar,
+      height: tinggiIsi * skala,
+      child: ClipRect(
+        child: Transform.translate(
+          offset: Offset(0, -atas * skala),
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: lebar,
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -43,12 +68,8 @@ class LandingView extends StatelessWidget {
             child: Column(
               children: [
                 SizedBox(height: size.height * 0.08),
-                Image.asset(
-                  'assets/images/logo.png',
-                  width: size.width * 0.6,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 6),
+                _logoTanpaPadding(size.width * 0.6),
+                const SizedBox(height: 4),
                 const Text(
                   'DRIVE YOUR JOURNEY',
                   style: TextStyle(
