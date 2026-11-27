@@ -44,7 +44,8 @@ class Db {
   static const pkAdmin = 'id_admin';
 
   static const tUser = 'users';
-  static const pkUser = 'id_user'; // ganti ke 'id' jika kolom kuncinya id
+  static const pkUser = 'id_user'; // bigint, bukan UUID auth
+  static const authUser = 'auth_user_id'; // UUID dari Supabase Auth
 
   static const tMitra = 'mitra';
   static const pkMitra = 'id_mitra';

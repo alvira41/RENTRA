@@ -1,5 +1,26 @@
 /// Helper format tampilan & konversi data. Tanpa package tambahan.
 class Formatter {
+  /// Relasi Supabase bisa berupa List atau Map tunggal.
+  static List<Map<String, dynamic>> rows(dynamic value) {
+    if (value is List) {
+      return value
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+    if (value is Map) return [Map<String, dynamic>.from(value)];
+    return <Map<String, dynamic>>[];
+  }
+
+  /// Ambil satu baris relasi dari Map atau List.
+  static Map<String, dynamic>? map(dynamic value) {
+    if (value is Map) return Map<String, dynamic>.from(value);
+    if (value is List && value.isNotEmpty && value.first is Map) {
+      return Map<String, dynamic>.from(value.first as Map);
+    }
+    return null;
+  }
+
   /// 1500000 -> "Rp 1.500.000"
   static String rupiah(num? value) {
     final n = (value ?? 0).round();

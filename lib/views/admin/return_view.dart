@@ -19,6 +19,8 @@ class _ReturnItem {
     required this.price,
     required this.image,
     required this.status,
+    required this.denda,
+    required this.selesai,
   });
 
   final int idOrder;
@@ -32,6 +34,8 @@ class _ReturnItem {
   final String price;
   final String image;
   final String status;
+  final num denda;
+  final bool selesai;
 }
 
 class ReturnView extends StatefulWidget {
@@ -106,12 +110,15 @@ class _ReturnViewState extends State<ReturnView> {
     final ongoingOk = await _order.loadAllOrders(status: 'ongoing');
     final ongoing = List<Map<String, dynamic>>.from(_order.orders);
     final confirmedOk = await _order.loadAllOrders(status: 'confirmed');
+    final confirmed = List<Map<String, dynamic>>.from(_order.orders);
+    final completedOk = await _order.loadAllOrders(status: 'completed');
     if (!mounted) return;
-    final semua = [...ongoing, ..._order.orders];
+    final completed = List<Map<String, dynamic>>.from(_order.orders);
+    final semua = [...ongoing, ...confirmed, ...completed];
     setState(() {
       _items = semua.expand(_dariOrder).toList();
     });
-    if (!ongoingOk || !confirmedOk) {
+    if (!ongoingOk || !confirmedOk || !completedOk) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_order.errorMessage ?? 'Gagal memuat pesanan aktif'),
@@ -122,17 +129,23 @@ class _ReturnViewState extends State<ReturnView> {
 
   List<_ReturnItem> _dariOrder(Map<String, dynamic> row) {
     final status = row['status']?.toString() ?? '';
-    if (status != 'confirmed' && status != 'ongoing') return [];
+    if (status != 'confirmed' &&
+        status != 'ongoing' &&
+        status != 'completed') {
+      return [];
+    }
 
-    final user = (row['user'] as Map?)?.cast<String, dynamic>();
-    final details = List<Map<String, dynamic>>.from(
-      (row['order_details'] as List?) ?? const [],
-    );
+    final user = Formatter.map(row['user']);
+    final details = Formatter.rows(row['order_details']);
 
     return details.map((detail) {
-      final katalog = (detail['katalog'] as Map?)?.cast<String, dynamic>();
+      final katalog = Formatter.map(detail['katalog']);
       final mulai = DateTime.tryParse(detail['tanggal_pinjam']?.toString() ?? '');
       final kembali = DateTime.tryParse(detail['tanggal_kembali']?.toString() ?? '');
+      final denda = Formatter.rows(detail['denda']).fold<num>(
+            0,
+            (jumlah, d) => jumlah + ((d['total_denda'] as num?) ?? 0),
+          );
       return _ReturnItem(
         idOrder: (row['id_order'] as num?)?.toInt() ?? 0,
         idOrderDetail: (detail['id_order_details'] as num?)?.toInt() ?? 0,
@@ -145,11 +158,14 @@ class _ReturnViewState extends State<ReturnView> {
         price: Formatter.rupiah(katalog?['price'] as num?),
         image: katalog?['image']?.toString() ?? '',
         status: status,
+        denda: denda,
+        selesai: status == 'completed',
       );
     }).toList();
   }
 
   void _toggle(_ReturnItem item) {
+    if (item.selesai) return;
     setState(() {
       if (_selected.contains(item.idOrderDetail)) {
         _selected.remove(item.idOrderDetail);
@@ -200,10 +216,9 @@ class _ReturnViewState extends State<ReturnView> {
 
     if (!mounted) return;
     if (sukses > 0) {
-      setState(() {
-        _items.removeWhere((e) => ids.contains(e.idOrder));
-        _selected.clear();
-      });
+      _selected.clear();
+      await _muat();
+      if (!mounted) return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -220,6 +235,7 @@ class _ReturnViewState extends State<ReturnView> {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final sidePadding = width * 0.06;
+    final totalDenda = _items.fold<num>(0, (jumlah, item) => jumlah + item.denda);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -284,14 +300,31 @@ class _ReturnViewState extends State<ReturnView> {
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: const Color(0x40FFFFFF)),
                             ),
-                            child: Text(
-                              'Aktual : ${Formatter.tanggal(_tanggal)}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 9,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Aktual : ${Formatter.tanggal(_tanggal)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                                if (totalDenda > 0)
+                                  Text(
+                                    'Denda : ${Formatter.rupiah(totalDenda)}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Color(0xFFFBBF24),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ),
@@ -428,7 +461,11 @@ class _ReturnCard extends StatelessWidget {
           color: const Color(0x26FFFFFF),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: checked ? const Color(0xFF60A5FA) : const Color(0x40FFFFFF),
+            color: checked
+                ? const Color(0xFF60A5FA)
+                : item.selesai
+                    ? const Color(0x404ADE80)
+                    : const Color(0x40FFFFFF),
           ),
         ),
         child: Row(
@@ -481,6 +518,11 @@ class _ReturnCard extends StatelessWidget {
                   _DetailLine(label: 'No telepon', value: item.phone),
                   _DetailLine(label: 'Tanggal sewa', value: item.startDate),
                   _DetailLine(label: 'Tanggal kembali', value: item.endDate),
+                  if (item.denda > 0)
+                    _DetailLine(
+                      label: 'Denda',
+                      value: Formatter.rupiah(item.denda),
+                    ),
                   const SizedBox(height: 6),
                   Text(
                     item.price,
@@ -497,11 +539,15 @@ class _ReturnCard extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Icon(
-              checked
-                  ? Icons.check_box_rounded
-                  : Icons.check_box_outline_blank_rounded,
+              item.selesai
+                  ? Icons.check_circle_rounded
+                  : checked
+                      ? Icons.check_box_rounded
+                      : Icons.check_box_outline_blank_rounded,
               size: 18,
-              color: AppColors.textPrimary,
+              color: item.selesai
+                  ? const Color(0xFF4ADE80)
+                  : AppColors.textPrimary,
             ),
           ],
         ),

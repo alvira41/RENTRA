@@ -18,6 +18,32 @@ class OrderService {
     return id;
   }
 
+  Future<int> _idUser() async {
+    final row = await _db
+        .from(Db.tUser)
+        .select(Db.pkUser)
+        .eq(Db.authUser, _uid)
+        .maybeSingle();
+    final id = row?[Db.pkUser];
+    if (id is num) return id.toInt();
+    final parsed = id == null ? null : int.tryParse(id.toString());
+    if (parsed == null) throw AppException('Profil user belum tersedia');
+    return parsed;
+  }
+
+  Future<int> _idAdmin() async {
+    final row = await _db
+        .from(Db.tAdmin)
+        .select(Db.pkAdmin)
+        .eq(Db.authUser, _uid)
+        .maybeSingle();
+    final id = row?[Db.pkAdmin];
+    if (id is num) return id.toInt();
+    final parsed = id == null ? null : int.tryParse(id.toString());
+    if (parsed == null) throw AppException('Profil admin belum tersedia');
+    return parsed;
+  }
+
   static const String _orderSelect =
       '*, order_details(*, katalog(nama_mobil, image, price), denda(*))';
 
@@ -43,7 +69,7 @@ class OrderService {
   /// items: [{id_mobil, tanggal_pinjam:'yyyy-MM-dd', tanggal_kembali:'yyyy-MM-dd'}]
   /// Harga = price x jumlah hari (min 1). Return id_order.
   Future<int> createOrder(List<Row> items, {String? buktiPaymentPath}) async {
-    final uid = _uid;
+    final idUser = await _idUser();
     if (items.isEmpty) throw AppException('Pilih minimal satu mobil');
 
     final ids = items.map((e) => _int(e['id_mobil'])).toSet().toList();
@@ -75,7 +101,7 @@ class OrderService {
     final code =
         'TRX-${DateTime.now().millisecondsSinceEpoch.toRadixString(36).toUpperCase()}';
     final order = await _db.from('orders').insert({
-      'id_user': uid,
+      'id_user': idUser,
       'transaction_code': code,
       'status': 'pending',
       'total_price': total,
@@ -95,32 +121,37 @@ class OrderService {
   }
 
   Future<void> setBuktiPayment(int idOrder, String path) async {
+    final idUser = await _idUser();
     final res = await _db
         .from('orders')
         .update({'bukti_payment': path})
         .eq('id_order', idOrder)
-        .eq('id_user', _uid)
+        .eq('id_user', idUser)
         .eq('status', 'pending')
         .select('id_order');
     if ((res as List).isEmpty) throw AppException('Order tidak ditemukan atau sudah diproses');
   }
 
   Future<void> cancelOrder(int idOrder) async {
+    final idUser = await _idUser();
     final res = await _db
         .from('orders')
         .update({'status': 'cancelled'})
         .eq('id_order', idOrder)
-        .eq('id_user', _uid)
+        .eq('id_user', idUser)
         .eq('status', 'pending')
         .select('id_order');
     if ((res as List).isEmpty) throw AppException('Order tidak bisa dibatalkan');
   }
 
-  Future<List<Row>> getMyOrders() async => _lampirkanUser(_rows(await _db
-      .from('orders')
-      .select(_orderSelect)
-      .eq('id_user', _uid)
-      .order('id_order', ascending: false)));
+  Future<List<Row>> getMyOrders() async {
+    final idUser = await _idUser();
+    return _lampirkanUser(_rows(await _db
+        .from('orders')
+        .select(_orderSelect)
+        .eq('id_user', idUser)
+        .order('id_order', ascending: false)));
+  }
 
   // ---------- ADMIN ----------
   Future<List<Row>> getAllOrders({String? status}) async {
@@ -166,7 +197,7 @@ class OrderService {
 
   /// Pending -> confirmed. Stok berkurang. Wajib ada bukti pembayaran.
   Future<void> confirmOrder(int idOrder) async {
-    final adminId = _uid;
+    final adminId = await _idAdmin();
     final order = await _orderRow(idOrder);
     if (order['status'] != 'pending') throw AppException('Order sudah diproses');
     final bukti = order['bukti_payment'];
@@ -184,7 +215,7 @@ class OrderService {
   }
 
   Future<void> rejectOrder(int idOrder) async {
-    final adminId = _uid;
+    final adminId = await _idAdmin();
     final res = await _db
         .from('orders')
         .update({'status': 'rejected', 'id_admin': adminId})

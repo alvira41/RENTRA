@@ -47,7 +47,9 @@ class OrderView extends StatefulWidget {
 class _OrderViewState extends State<OrderView> {
   late final OrderController _order;
 
-  List<_OrderItem> get _orders => _order.orders.map(_dariBaris).toList();
+  List<Map<String, dynamic>> _rows = [];
+
+  List<_OrderItem> get _orders => _rows.map(_dariBaris).toList();
 
   @override
   void initState() {
@@ -57,8 +59,16 @@ class _OrderViewState extends State<OrderView> {
   }
 
   Future<void> _muat() async {
-    final ok = await _order.loadAllOrders(status: 'pending');
-    if (!ok && mounted) {
+    final semua = <Map<String, dynamic>>[];
+    var ok = true;
+    for (final status in ['pending', 'confirmed', 'ongoing']) {
+      final berhasil = await _order.loadAllOrders(status: status);
+      if (!berhasil) ok = false;
+      semua.addAll(List<Map<String, dynamic>>.from(_order.orders));
+    }
+    if (!mounted) return;
+    setState(() => _rows = semua);
+    if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_order.errorMessage ?? 'Gagal memuat pesanan')),
       );
@@ -66,12 +76,10 @@ class _OrderViewState extends State<OrderView> {
   }
 
   _OrderItem _dariBaris(Map<String, dynamic> row) {
-    final details = List<Map<String, dynamic>>.from(
-      (row['order_details'] as List?) ?? const [],
-    );
+    final details = Formatter.rows(row['order_details']);
     final detail = details.isEmpty ? <String, dynamic>{} : details.first;
-    final katalog = (detail['katalog'] as Map?)?.cast<String, dynamic>();
-    final user = (row['user'] as Map?)?.cast<String, dynamic>();
+    final katalog = Formatter.map(detail['katalog']);
+    final user = Formatter.map(row['user']);
     final mulai = DateTime.tryParse(detail['tanggal_pinjam']?.toString() ?? '');
     final kembali = DateTime.tryParse(detail['tanggal_kembali']?.toString() ?? '');
 
@@ -106,6 +114,7 @@ class _OrderViewState extends State<OrderView> {
         ),
       ),
     );
+    if (ok) await _muat();
   }
 
   @override
@@ -149,14 +158,43 @@ class _OrderViewState extends State<OrderView> {
                 ),
                 Padding(
                   padding: EdgeInsets.fromLTRB(sidePadding, 18, sidePadding, 8),
-                  child: const Text(
-                    'KONFIRMASI PESANAN',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'KONFIRMASI PESANAN',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () =>
+                            Navigator.of(context).pushNamed(AppRoutes.adminReturn),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4ADE80).withAlpha(40),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFF4ADE80)),
+                          ),
+                          child: const Text(
+                            'Pengembalian',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(
@@ -196,10 +234,7 @@ class _OrderViewState extends State<OrderView> {
                                     AppRoutes.adminPaymentProof,
                                     arguments: item.idOrder,
                                   ),
-                                  onReturn: () => Navigator.of(context).pushNamed(
-                                    AppRoutes.adminReturn,
-                                    arguments: item.idOrder,
-                                  ),
+
                                 );
                               },
                             );
@@ -220,13 +255,11 @@ class _OrderCard extends StatelessWidget {
     required this.item,
     required this.onConfirm,
     required this.onProof,
-    required this.onReturn,
   });
 
   final _OrderItem item;
   final VoidCallback onConfirm;
   final VoidCallback onProof;
-  final VoidCallback onReturn;
 
   @override
   Widget build(BuildContext context) {
@@ -266,11 +299,12 @@ class _OrderCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                _ActionChip(
-                  label: 'Confirm',
-                  color: const Color(0xFF3B82F6),
-                  onTap: onConfirm,
-                ),
+                if (item.status == 'pending')
+                  _ActionChip(
+                    label: 'Confirm',
+                    color: const Color(0xFF3B82F6),
+                    onTap: onConfirm,
+                  ),
                 const SizedBox(height: 4),
                 _ActionChip(
                   label: item.buktiPayment == null || item.buktiPayment!.isEmpty
@@ -279,12 +313,7 @@ class _OrderCard extends StatelessWidget {
                   color: const Color(0xFFFACC15),
                   onTap: onProof,
                 ),
-                const SizedBox(height: 4),
-                _ActionChip(
-                  label: 'Kembalikan',
-                  color: const Color(0xFF4ADE80),
-                  onTap: onReturn,
-                ),
+
               ],
             ),
           ),

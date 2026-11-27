@@ -73,17 +73,13 @@ class _RiwayatViewState extends State<RiwayatView> {
   }
 
   _Riwayat _dariBaris(Map<String, dynamic> row) {
-    final details = List<Map<String, dynamic>>.from(
-      (row['order_details'] as List?) ?? const [],
-    );
+    final details = Formatter.rows(row['order_details']);
     final detail = details.isEmpty ? <String, dynamic>{} : details.first;
-    final katalog = (detail['katalog'] as Map?)?.cast<String, dynamic>();
+    final katalog = Formatter.map(detail['katalog']);
 
     num denda = 0;
     for (final d in details) {
-      final dendaRows = List<Map<String, dynamic>>.from(
-        (d['denda'] as List?) ?? const [],
-      );
+      final dendaRows = Formatter.rows(d['denda']);
       for (final itemDenda in dendaRows) {
         denda += (itemDenda['total_denda'] as num?) ?? 0;
       }

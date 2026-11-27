@@ -59,24 +59,69 @@ class AuthService {
       data: {
         'role': AppRole.user,
         'nama_user': namaUser.trim(),
-      },
-    );
-
-    final uid = res.user?.id;
-
-    if (uid != null && res.session != null) {
-      await _db.from(Db.tUser).upsert({
-        Db.pkUser: uid,
-        'nama_user': namaUser.trim(),
         'jenis_kelamin':? jenisKelamin,
         'tanggal_lahir':? tanggalLahir,
         'alamat':? alamat,
         'no_telepon_user':? noTeleponUser,
         if (noKtp != null && noKtp.isNotEmpty) 'no_ktp': noKtp,
-      });
+      },
+    );
+
+    final uid = res.user?.id;
+
+    if (uid != null) {
+      try {
+        final data = {
+          'nama_user': namaUser.trim(),
+          'jenis_kelamin':? jenisKelamin,
+          'tanggal_lahir':? tanggalLahir,
+          'alamat':? alamat,
+          'no_telepon_user':? noTeleponUser,
+          if (noKtp != null && noKtp.isNotEmpty) 'no_ktp': noKtp,
+        };
+        final existing = await _db
+            .from(Db.tUser)
+            .select(Db.authUser)
+            .eq(Db.authUser, uid)
+            .maybeSingle();
+        if (existing == null) {
+          await _db.from(Db.tUser).insert({'auth_user_id': uid, ...data});
+        } else {
+          await _db.from(Db.tUser).update(data).eq(Db.authUser, uid);
+        }
+      } catch (_) {}
     }
 
     return res;
+  }
+
+  /// Buat profil users saat login jika belum ada (email confirmation aktif).
+  Future<void> ensureUserProfile() async {
+    final user = currentUser;
+    final uid = user?.id;
+    if (uid == null || user == null) return;
+
+    final meta = Map<String, dynamic>.from(user.userMetadata ?? const {});
+    if (meta['role'] != AppRole.user) return;
+
+    final existing = await _db
+        .from(Db.tUser)
+        .select(Db.authUser)
+        .eq(Db.authUser, uid)
+        .maybeSingle();
+    if (existing != null) return;
+
+    final data = <String, dynamic>{
+      'nama_user': meta['nama_user']?.toString() ?? '-',
+      'jenis_kelamin':? meta['jenis_kelamin'],
+      'tanggal_lahir':? meta['tanggal_lahir'],
+      'alamat':? meta['alamat'],
+      'no_telepon_user':? meta['no_telepon_user'],
+    };
+    final ktp = meta['no_ktp'];
+    if (ktp != null && ktp.toString().isNotEmpty) data['no_ktp'] = ktp;
+
+    await _db.from(Db.tUser).insert({'auth_user_id': uid, ...data});
   }
 
   // ==========================================
@@ -162,11 +207,11 @@ class AuthService {
     }
 
     // USER:
-    // Menggunakan primary key sesuai konfigurasi Db.
+    // UUID Supabase Auth ada di auth_user_id, bukan id_user (bigint).
     final user = await _db
         .from(Db.tUser)
-        .select(Db.pkUser)
-        .eq(Db.pkUser, uid)
+        .select(Db.authUser)
+        .eq(Db.authUser, uid)
         .maybeSingle();
 
     if (user != null) {
@@ -190,7 +235,7 @@ class AuthService {
         return (Db.tMitra, 'auth_user_id');
 
       case AppRole.user:
-        return (Db.tUser, Db.pkUser);
+        return (Db.tUser, Db.authUser);
 
       default:
         throw Exception('Role tidak dikenali: $role');

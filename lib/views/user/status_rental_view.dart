@@ -62,19 +62,15 @@ class _StatusRentalViewState extends State<StatusRentalView> {
   }
 
   _Rental _dariBaris(Map<String, dynamic> row) {
-    final details = List<Map<String, dynamic>>.from(
-      (row['order_details'] as List?) ?? const [],
-    );
+    final details = Formatter.rows(row['order_details']);
     final detail = details.isEmpty ? <String, dynamic>{} : details.first;
-    final katalog = (detail['katalog'] as Map?)?.cast<String, dynamic>();
+    final katalog = Formatter.map(detail['katalog']);
     final status = row['status']?.toString() ?? '-';
     final path = row['bukti_payment']?.toString();
 
     num denda = 0;
     for (final d in details) {
-      final dendaRows = List<Map<String, dynamic>>.from(
-        (d['denda'] as List?) ?? const [],
-      );
+      final dendaRows = Formatter.rows(d['denda']);
       for (final itemDenda in dendaRows) {
         denda += (itemDenda['total_denda'] as num?) ?? 0;
       }
@@ -231,6 +227,15 @@ class _RentalItem extends StatelessWidget {
   final VoidCallback onCancel;
   final VoidCallback onUpload;
 
+  String get _labelStatus {
+    if (rental.status == 'pending') {
+      return rental.buktiPayment == null
+          ? 'Menunggu Bayar'
+          : 'Menunggu Konfirmasi';
+    }
+    return Formatter.statusOrder(rental.status);
+  }
+
   Color get _warnaStatus {
     switch (rental.status) {
       case 'confirmed':
@@ -293,7 +298,9 @@ class _RentalItem extends StatelessWidget {
   String get _judulWaktu {
     switch (rental.status) {
       case 'pending':
-        return 'Menunggu konfirmasi admin';
+        return rental.buktiPayment == null
+            ? 'Menunggu pembayaran'
+            : 'Menunggu konfirmasi admin';
       case 'confirmed':
         return 'Mobil siap diambil';
       case 'ongoing':
@@ -325,7 +332,7 @@ class _RentalItem extends StatelessWidget {
             border: Border.all(color: _warnaStatus),
           ),
           child: Text(
-            Formatter.statusOrder(rental.status),
+            _labelStatus,
             style: TextStyle(
               color: _warnaStatus,
               fontSize: 8,

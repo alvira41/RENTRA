@@ -27,6 +27,7 @@ class AuthController extends BaseController {
   }
 
   Future<void> _loadRole() async {
+    await _service.ensureUserProfile();
     final role = await _service.getRole();
     if (role == null) {
       await _service.signOut();

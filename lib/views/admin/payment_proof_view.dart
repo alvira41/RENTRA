@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../controllers/order_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/controllers/app_controllers.dart';
+import '../../core/routes/app_routes.dart';
 import '../../core/utils/formatter.dart';
 
 class PaymentProofView extends StatefulWidget {
@@ -36,6 +37,17 @@ class _PaymentProofViewState extends State<PaymentProofView> {
     if (status == 'pending') return 'Konfirmasi';
     if (status == 'confirmed') return 'Mulai Sewa';
     return null;
+  }
+
+  bool get _bisaKembali {
+    final status = _order.selectedOrder?['status']?.toString();
+    return status == 'confirmed' || status == 'ongoing';
+  }
+
+  void _bukaPengembalian() {
+    final id = widget.idOrder;
+    if (id == null || !mounted) return;
+    Navigator.of(context).pushNamed(AppRoutes.adminReturn, arguments: id);
   }
 
   Future<void> _proses() async {
@@ -142,9 +154,9 @@ class _PaymentProofViewState extends State<PaymentProofView> {
                                 date: _tanggalOrder(row),
                                 orderId: row['transaction_code']?.toString() ?? '-',
                                 customer:
-                                    (row['user'] as Map?)?['nama_user']?.toString() ??
+                                    Formatter.map(row['user'])?['nama_user']?.toString() ??
                                     '-',
-                                phone: (row['user'] as Map?)?['no_telepon_user']
+                                phone: Formatter.map(row['user'])?['no_telepon_user']
                                         ?.toString() ??
                                     '-',
                                 details: _detailMobil(row),
@@ -193,11 +205,19 @@ class _PaymentProofViewState extends State<PaymentProofView> {
                             color: AppColors.textPrimary,
                             onTap: () => Navigator.of(context).pop(),
                           ),
+                          const Spacer(),
                           if (aksi != null)
                             _PillButton(
                               label: aksi,
                               color: const Color(0xFF4ADE80),
                               onTap: _proses,
+                            ),
+                          if (_bisaKembali) const SizedBox(width: 8),
+                          if (_bisaKembali)
+                            _PillButton(
+                              label: 'Pengembalian',
+                              color: const Color(0xFF60A5FA),
+                              onTap: _bukaPengembalian,
                             ),
                         ],
                       ),
@@ -213,8 +233,8 @@ class _PaymentProofViewState extends State<PaymentProofView> {
   }
 
   String _tanggalOrder(Map<String, dynamic> row) {
-    final details = (row['order_details'] as List?) ?? const [];
-    final first = details.isEmpty ? null : details.first as Map<String, dynamic>;
+    final details = Formatter.rows(row['order_details']);
+    final first = details.isEmpty ? null : details.first;
     return _waktu(
         row['created_at']?.toString() ?? first?['tanggal_pinjam']?.toString());
   }
@@ -228,11 +248,9 @@ class _PaymentProofViewState extends State<PaymentProofView> {
   }
 
   List<String> _detailMobil(Map<String, dynamic> row) {
-    final details = List<Map<String, dynamic>>.from(
-      (row['order_details'] as List?) ?? const [],
-    );
+    final details = Formatter.rows(row['order_details']);
     return details.map((detail) {
-      final katalog = (detail['katalog'] as Map?)?.cast<String, dynamic>();
+      final katalog = Formatter.map(detail['katalog']);
       final mulai = DateTime.tryParse(detail['tanggal_pinjam']?.toString() ?? '');
       final kembali = DateTime.tryParse(detail['tanggal_kembali']?.toString() ?? '');
       return '${katalog?['nama_mobil'] ?? '-'} | ${Formatter.tanggal(mulai)} - '

@@ -18,6 +18,19 @@ class SupplyService {
     return id;
   }
 
+  Future<int> _idAdmin() async {
+    final row = await _db
+        .from(Db.tAdmin)
+        .select(Db.pkAdmin)
+        .eq(Db.authUser, _uid)
+        .maybeSingle();
+    final id = row?[Db.pkAdmin];
+    if (id is num) return id.toInt();
+    final parsed = id == null ? null : int.tryParse(id.toString());
+    if (parsed == null) throw AppException('Profil admin belum tersedia');
+    return parsed;
+  }
+
   /// Admin: daftar mitra untuk dropdown.
   Future<List<Row>> getMitraList() async =>
       _rows(await _db.from(Db.tMitra).select().order('nama_rental'));
@@ -35,15 +48,17 @@ class SupplyService {
     required String tanggalSupply, // 'yyyy-MM-dd'
     String? tanggalKembali,
     int? idOrder,
-  }) async =>
-      await _db.from('supply').insert({
-        'id_admin': _uid,
-        'id_mitra': idMitra,
-        'id_order': idOrder,
-        'tanggal_supply': tanggalSupply,
-        'tanggal_kembali': tanggalKembali,
-        'status': 'pending',
-      }).select(_select).single();
+  }) async {
+    final idAdmin = await _idAdmin();
+    return await _db.from('supply').insert({
+      'id_admin': idAdmin,
+      'id_mitra': idMitra,
+      'id_order': idOrder,
+      'tanggal_supply': tanggalSupply,
+      'tanggal_kembali': tanggalKembali,
+      'status': 'pending',
+    }).select(_select).single();
+  }
 
   Future<void> updateSupply(int idSupply, Row data) async =>
       await _db.from('supply').update(data).eq('id_supply', idSupply);
