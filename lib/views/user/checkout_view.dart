@@ -170,7 +170,7 @@ class _CheckoutViewState extends State<CheckoutView> {
       return;
     }
     if (_bukti == null) {
-      _pesan('Pilih metode pembayaran dan unggah bukti dulu');
+      _pesan('Lakukan pembayaran dan upload bukti terlebih dahulu');
       return;
     }
 
