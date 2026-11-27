@@ -62,9 +62,7 @@ class MitraMobilData {
           : _isi(row, const ['nama_mobil']),
       merk: _isi(row, const ['merk', 'merk_mobil', 'brand']),
       nopol: _isi(row, const ['nopol', 'no_polisi', 'plat_nomor']),
-      spesifikasi: _isi(row, const ['spesifikasi']).isEmpty
-          ? transmisi
-          : _isi(row, const ['spesifikasi']),
+      spesifikasi: _isi(row, const ['spesifikasi']),
       kapasitas: _isi(
           row, const ['kapasitas', 'kapasitas_penumpang', 'jumlah_kursi']),
       bbm: _isi(row, const ['bbm', 'jenis_bbm', 'bahan_bakar']),
@@ -90,9 +88,7 @@ class MitraMobilData {
           : _isi(row, const ['nama_mobil_mitra']),
       merk: _isi(row, const ['merk', 'merk_mobil', 'brand']),
       nopol: _isi(row, const ['nopol', 'no_polisi', 'plat_nomor']),
-      spesifikasi: _isi(row, const ['spesifikasi']).isEmpty
-          ? transmisi
-          : _isi(row, const ['spesifikasi']),
+      spesifikasi: _isi(row, const ['spesifikasi']),
       kapasitas: _isi(
           row, const ['kapasitas', 'kapasitas_penumpang', 'jumlah_kursi']),
       bbm: _isi(row, const ['bbm', 'jenis_bbm', 'bahan_bakar']),

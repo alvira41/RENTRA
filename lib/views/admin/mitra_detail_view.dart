@@ -3,6 +3,9 @@ import '../../controllers/katalog_controller.dart';
 import '../../controllers/supply_controller.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/controllers/app_controllers.dart';
+import '../widgets/add_options_dialog.dart';
+import '../widgets/mitra_mobil_card.dart' show rupiah;
+import '../widgets/admin_bottom_bar.dart';
 import '../widgets/rentra_scaffold.dart';
 
 class MitraDetailView extends StatefulWidget {
@@ -60,18 +63,51 @@ class _MitraDetailViewState extends State<MitraDetailView> {
       _supply.loadMitraList(),
       _supply.loadSupplies(idMitra: _idMitra),
       _katalog.loadKatalogMitra(idMitra: _idMitra),
+      _katalog.loadCategories(),
     ]);
     if (!mounted) return;
     setState(() => _loading = false);
   }
 
+  String _namaKategori(dynamic id) {
+    final idKat = id is num ? id.toInt() : int.tryParse(id?.toString() ?? '');
+    if (idKat == null) return '-';
+    for (final k in _katalog.categories) {
+      final kid = k['id_category'];
+      if (kid is num && kid.toInt() == idKat) {
+        return (k['nama'] ?? k['name'])?.toString() ?? '-';
+      }
+    }
+    return '-';
+  }
+
   List<_Mobil> get _mobil => _katalog.katalogMitra.map((row) {
+        String isi(List<String> keys) {
+          for (final key in keys) {
+            final value = row[key];
+            if (value == null) continue;
+            final teks = value.toString().trim();
+            if (teks.isNotEmpty && teks != '-') return teks;
+          }
+          return '';
+        }
+
         final image = row['image_mitra']?.toString() ?? '';
-        final kategori = row['id_category_mitra']?.toString() ?? '-';
+        final kategori = _namaKategori(row['id_category_mitra']);
         final stok = (row['total_stock_mitra'] as num?)?.toInt() ?? 0;
+        final harga = (row['price'] as num?)?.toInt() ??
+            (row['harga'] as num?)?.toInt() ??
+            0;
         return _Mobil(
           nama: row['nama_mobil_mitra']?.toString() ?? '-',
           kategori: kategori,
+          merk: isi(const ['merk', 'merk_mobil', 'brand']),
+          nopol: isi(const ['nopol', 'no_polisi', 'plat_nomor']),
+          spesifikasi: isi(const ['spesifikasi']),
+          kapasitas: isi(const ['kapasitas', 'kapasitas_penumpang']),
+          bbm: isi(const ['bbm', 'jenis_bbm']),
+          harga: harga,
+          deskripsi: isi(const ['deskripsi', 'keterangan']),
           stok: stok,
           image: image,
         );
@@ -100,31 +136,31 @@ class _MitraDetailViewState extends State<MitraDetailView> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final side = width * 0.06;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0B1220),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0B1220), Color(0xFF111B2E), Color(0xFF0B1220)],
-          ),
-        ),
+      backgroundColor: AppColors.background,
+      bottomNavigationBar: AdminBottomBar(
+        currentIndex: 3,
+        onAddTap: () => showAddOptionsDialog(context),
+      ),
+      body: RentraBackground(
         child: SafeArea(
+          bottom: false,
           child: ListenableBuilder(
             listenable: _supply,
             builder: (context, _) {
               return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                padding: EdgeInsets.fromLTRB(side, 16, side, 16),
                 children: [
-                  const Center(
-                    child: Text('RENTRA',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    )),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: width * 0.3,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   const SizedBox(height: 18),
                   Text(_namaRental,
@@ -140,12 +176,13 @@ class _MitraDetailViewState extends State<MitraDetailView> {
                   _InfoLine('Alamat', _mitraRow?['alamat']?.toString() ?? '-'),
                   _InfoLine('No Telepon',
                       _mitraRow?['no_telepon']?.toString() ?? '-'),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
+                    height: 40,
                     child: ElevatedButton.icon(
                       onPressed: _ajukanSupply,
-                      icon: const Icon(Icons.local_shipping_outlined, size: 14),
+                      icon: const Icon(Icons.local_shipping_outlined, size: 16),
                       label: const Text('Ajukan Supply ke Mitra Ini'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF4F6FB8).withAlpha(50),
@@ -153,23 +190,23 @@ class _MitraDetailViewState extends State<MitraDetailView> {
                         elevation: 0,
                         side: const BorderSide(color: Color(0xFF4F6FB8)),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(20),
                         ),
                         textStyle: const TextStyle(
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   const Text('Mobil Mitra',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w700,
                       )),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   if (_loading)
                     const Center(
                       child: Padding(
@@ -180,12 +217,13 @@ class _MitraDetailViewState extends State<MitraDetailView> {
                   else
                     for (final m in _mobil)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.only(bottom: 12),
                         child: _MobilCard(mobil: m),
                       ),
                   if (!_loading && _mobil.isEmpty)
                     const Text('Belum ada mobil milik mitra ini',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),
+                        style: TextStyle(
+                            color: AppColors.textSecondary, fontSize: 11)),
                 ],
               );
             },
@@ -202,12 +240,26 @@ class _Mobil {
     required this.kategori,
     required this.stok,
     required this.image,
+    this.merk = '',
+    this.nopol = '',
+    this.spesifikasi = '',
+    this.kapasitas = '',
+    this.bbm = '',
+    this.harga = 0,
+    this.deskripsi = '',
   });
 
   final String nama;
   final String kategori;
   final int stok;
   final String image;
+  final String merk;
+  final String nopol;
+  final String spesifikasi;
+  final String kapasitas;
+  final String bbm;
+  final int harga;
+  final String deskripsi;
 }
 
 class _InfoLine extends StatelessWidget {
@@ -221,15 +273,18 @@ class _InfoLine extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 1),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 80,
+            width: 84,
             child: Text(label,
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 8)),
+                style: const TextStyle(
+                    color: AppColors.textPrimary, fontSize: 10)),
           ),
           Expanded(
             child: Text(': $value',
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 8)),
+                style: const TextStyle(
+                    color: AppColors.textSecondary, fontSize: 10)),
           ),
         ],
       ),
@@ -242,33 +297,73 @@ class _MobilCard extends StatelessWidget {
 
   final _Mobil mobil;
 
+  Widget _gambarKosong() => Container(
+        color: AppColors.inputFill,
+        child: const Icon(Icons.directions_car,
+            color: AppColors.textSecondary, size: 28),
+      );
+
+  Widget _baris(String teks) => Text(
+        teks,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 9,
+          height: 1.4,
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
+    final imageWidth = MediaQuery.of(context).size.width * 0.26;
+    final tersedia = mobil.stok > 0;
+    final warna =
+        tersedia ? const Color(0xFF4ADE80) : const Color(0xFFFB923C);
+
     return GlassCard(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: SizedBox(
-              width: 70,
-              height: 48,
-              child: mobil.image.isEmpty
-                  ? Container(
-                      color: AppColors.inputFill,
-                      child: const Icon(Icons.directions_car,
-                          color: AppColors.textSecondary, size: 28),
-                    )
-                  : Image.network(
-                      mobil.image,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: AppColors.inputFill,
-                        child: const Icon(Icons.directions_car,
-                            color: AppColors.textSecondary, size: 28),
-                      ),
+          SizedBox(
+            width: imageWidth,
+            child: Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: AspectRatio(
+                    aspectRatio: 1.5,
+                    child: mobil.image.isEmpty
+                        ? _gambarKosong()
+                        : Image.network(
+                            mobil.image,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                _gambarKosong(),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: warna.withAlpha(40),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: warna),
+                  ),
+                  child: Text(
+                    tersedia ? 'Tersedia' : 'Habis',
+                    style: TextStyle(
+                      color: warna,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
                     ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 10),
@@ -276,17 +371,48 @@ class _MobilCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(mobil.nama,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                    )),
-                const SizedBox(height: 3),
-                Text('Kategori : ${mobil.kategori}',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 8)),
-                Text('Stok : ${mobil.stok}',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 8)),
+                Text(
+                  mobil.nama.toUpperCase(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (mobil.merk.isNotEmpty)
+                  _baris('Merk Mobil : ${mobil.merk}'),
+                if (mobil.nopol.isNotEmpty)
+                  _baris('Nomor Polisi : ${mobil.nopol}'),
+                if (mobil.spesifikasi.isNotEmpty)
+                  _baris('Spesifikasi : ${mobil.spesifikasi}'),
+                _baris('Tipe Transmisi : ${mobil.kategori}'),
+                if (mobil.kapasitas.isNotEmpty)
+                  _baris('Kapasitas penumpang : ${mobil.kapasitas}'),
+                if (mobil.bbm.isNotEmpty) _baris('Jenis BBM : ${mobil.bbm}'),
+                if (mobil.deskripsi.isNotEmpty)
+                  _baris('Deskripsi : ${mobil.deskripsi}'),
+                const SizedBox(height: 4),
+                if (mobil.harga > 0) ...[
+                  const Text(
+                    'Harga tidak termasuk BBM',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 8,
+                    ),
+                  ),
+                  _baris('Harga : ${rupiah(mobil.harga)} / hari'),
+                ],
+                Text(
+                  'Stok : ${mobil.stok}',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
           ),
